@@ -72,7 +72,6 @@ void GPIO0_IRQHandler(void) {
       setMode(0);
 
       sensor_initialized = true;
-      printf("Measurement restarted.\n");
     }
     state_changed = true;
     printf("Measurement %s\n", measuring ? "started" : "stopped");
@@ -107,40 +106,10 @@ int main(void) {
 
   bool prev_state = measuring;
   while (1) {
-    if (state_changed) {
-      if (measuring && !prev_state) {
-        // Attempt to bring the sensor out of shutdown by performing a soft
-        // reset. For instance, clear the reset/shutdown bits in the system
-        // configuration register.
-        // Reinitialize the SPI interface and sensor registers
-        initSPI();
-        init(); // Your custom sensor initialization
-        regWrite(SYSTEM_CONFIGURATION_1_REGISTER, 0x00);
-        MXC_Delay(10000); // Delay to allow the sensor to power up
-
-        // Re-enable BioZ channels by setting the lower 3 bits of register 0x20.
-        regWrite(0x20, (regRead(0x20) & 0xF8) | 0x07);
-
-        // Re-enable the PLL by setting bit 0 in register 0x17.
-        changeReg(0x17, 1, 0, 1);
-
-        // Restore other settings as needed.
-        SFBIAsettings();
-        setMode(0);
-
-        sensor_initialized = true;
-        printf("Measurement restarted.\n");
-      } else if (!measuring && prev_state) {
-        // When stopping measurement, shut down sensor using changeReg
-        // Setting the SHDN bit in SYSTEM_CONFIGURATION_1_REGISTER to put device
-        sensor_initialized = false;
-      }
-      prev_state = measuring;
-      state_changed = false;
-    }
-
     if (measuring) {
       spiBurst();
+      MXC_Delay(100000); // Idle delay
+
     } else {
       MXC_Delay(100000); // Idle delay
     }
