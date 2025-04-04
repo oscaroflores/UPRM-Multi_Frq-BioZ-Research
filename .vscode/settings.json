@@ -82,6 +82,8 @@
         "spi.h": "c",
         "gpio.h": "c",
         "mxc_sys.h": "c",
-        "mxc_errors.h": "c"
+        "mxc_errors.h": "c",
+        "periph_api.h": "c",
+        "spifunctions.h": "c"
     }
 }

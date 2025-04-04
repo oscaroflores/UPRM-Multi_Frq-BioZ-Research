@@ -1,22 +1,8 @@
-/*
-This is the main file for communication done between the MAX32655 and the
-MAX30009 to measure GSR
-
-
-The current setup set out good frequencies for GSR, but there are functions to
-easily change the settings to measure at different rates or to measure different
-vital signs depending on necessities
-
-
-
-
-
-
-*/
 #include "MAX30009.h"
 #include "MAX32655.h"
 #include "board.h"
 #include "dma.h"
+#include "gpio.h"
 #include "led.h"
 #include "mxc_delay.h"
 #include "mxc_device.h"
@@ -36,7 +22,6 @@ vital signs depending on necessities
 /***** Definitions *****/
 #define SPI_SPEED 1000000 // Bit Rate
 
-// Board Selection
 #define SPI MXC_SPI1
 #define SPI_IRQ SPI1_IRQn
 
@@ -46,25 +31,121 @@ uint8_t gHold[100];
 int errCnt;
 extern int count;
 
+volatile bool measuring = false; // Toggle flag via interrupt
+volatile bool state_changed = false;
+bool sensor_initialized = false; // Tracks if sensor/SPI are active
+
+/***** Function Prototypes *****/
+void setupButtonInterrupt(void);
+
+/***** Interrupt Handler for Button *****/
+void GPIO0_IRQHandler(void) {
+  if (MXC_GPIO_GetFlags(MXC_GPIO0) & MXC_GPIO_PIN_2) {
+    MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_2);
+    measuring = !measuring;
+
+    if (!measuring) {
+      // Reset the count when measurement is stopped
+      changeReg(0x20, 0, 2, 3);
+      regWrite(0x20, regRead(0x20) & 0xF8);
+      changeReg(0x17, 0, 0, 1);
+    }
+    if (measuring) {
+      // Reset the count when measurement is started
+      // Attempt to bring the sensor out of shutdown by performing a soft
+      // reset. For instance, clear the reset/shutdown bits in the system
+      // configuration register.
+      // Reinitialize the SPI interface and sensor registers
+      initSPI();
+      init(); // Your custom sensor initialization
+      regWrite(SYSTEM_CONFIGURATION_1_REGISTER, 0x00);
+      MXC_Delay(10000); // Delay to allow the sensor to power up
+
+      // Re-enable BioZ channels by setting the lower 3 bits of register 0x20.
+      regWrite(0x20, (regRead(0x20) & 0xF8) | 0x07);
+
+      // Re-enable the PLL by setting bit 0 in register 0x17.
+      changeReg(0x17, 1, 0, 1);
+
+      // Restore other settings as needed.
+      SFBIAsettings();
+      setMode(0);
+
+      sensor_initialized = true;
+      printf("Measurement restarted.\n");
+    }
+    state_changed = true;
+    printf("Measurement %s\n", measuring ? "started" : "stopped");
+  }
+}
+
+/***** GPIO Button Setup *****/
+void setupButtonInterrupt(void) {
+  mxc_gpio_cfg_t button_cfg = {
+      .port = MXC_GPIO0,
+      .mask = MXC_GPIO_PIN_2,
+      .func = MXC_GPIO_FUNC_IN,
+      .pad = MXC_GPIO_PAD_PULL_UP,
+      .vssel = MXC_GPIO_VSSEL_VDDIO,
+  };
+
+  MXC_GPIO_Config(&button_cfg);
+
+  // Register callback and enable interrupt on falling edge
+  MXC_GPIO_RegisterCallback(&button_cfg, GPIO0_IRQHandler, NULL);
+  MXC_GPIO_IntConfig(&button_cfg, MXC_GPIO_INT_FALLING);
+
+  MXC_GPIO_EnableInt(MXC_GPIO0, MXC_GPIO_PIN_2);
+  NVIC_EnableIRQ(GPIO0_IRQn);
+}
+
 int main(void) {
+  printf("System initializing...\n");
+  // You might want to call initSPI() here if needed
+  setupButtonInterrupt();
+  printf("System ready. Press W2 (Port0.2) to begin or stop measurement.\n");
 
-  printf("START\n");
-  /*
-  Collection of reads or writes including initialisation
-  */
-  initSPI(); // begin SPI communication
-  init();    // initialise the MAX30009
-//   GSRsettings();//put in correct setting for GSR communication
-  SFBIAsettings(); // put in correct setting for SFBIA communication
-  setMode(0);
+  bool prev_state = measuring;
+  while (1) {
+    if (state_changed) {
+      if (measuring && !prev_state) {
+        // Attempt to bring the sensor out of shutdown by performing a soft
+        // reset. For instance, clear the reset/shutdown bits in the system
+        // configuration register.
+        // Reinitialize the SPI interface and sensor registers
+        initSPI();
+        init(); // Your custom sensor initialization
+        regWrite(SYSTEM_CONFIGURATION_1_REGISTER, 0x00);
+        MXC_Delay(10000); // Delay to allow the sensor to power up
 
-  spiBurst(); // begin reading from the FIFO
+        // Re-enable BioZ channels by setting the lower 3 bits of register 0x20.
+        regWrite(0x20, (regRead(0x20) & 0xF8) | 0x07);
 
-  printf("error count = %d\n", errCnt);
+        // Re-enable the PLL by setting bit 0 in register 0x17.
+        changeReg(0x17, 1, 0, 1);
 
+        // Restore other settings as needed.
+        SFBIAsettings();
+        setMode(0);
+
+        sensor_initialized = true;
+        printf("Measurement restarted.\n");
+      } else if (!measuring && prev_state) {
+        // When stopping measurement, shut down sensor using changeReg
+        // Setting the SHDN bit in SYSTEM_CONFIGURATION_1_REGISTER to put device
+        sensor_initialized = false;
+      }
+      prev_state = measuring;
+      state_changed = false;
+    }
+
+    if (measuring) {
+      spiBurst();
+    } else {
+      MXC_Delay(100000); // Idle delay
+    }
+  }
   shutdownSPI();
-
-  printf("Finished\n");
 
   return E_NO_ERROR;
 }

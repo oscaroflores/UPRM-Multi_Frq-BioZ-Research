@@ -1,0 +1,32 @@
+/home/ricardo/MaximSDK/MyProjects/UPRM-Multi_Frq-BioZ-Research/build/max20303.o: \
+ /home/ricardo/MaximSDK/Libraries/MiscDrivers/PMIC/max20303.c \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ max32655.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/system_max32655.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_errors.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_delay.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/i2c.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdbool.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/i2c_regs.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/dma_regs.h \
+ /home/ricardo/MaximSDK/Libraries/MiscDrivers/PMIC/max20303.h
