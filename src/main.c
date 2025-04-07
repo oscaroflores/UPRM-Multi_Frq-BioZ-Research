@@ -22,6 +22,7 @@ vital signs depending on necessities
 #include "mxc_device.h"
 #include "mxc_pins.h"
 #include "nvic_table.h"
+#include "sdhc.h"
 #include "spi.h"
 #include "uart.h"
 #include <math.h>
@@ -49,20 +50,25 @@ extern int count;
 int main(void) {
 
   printf("START\n");
-  /*
-  Collection of reads or writes including initialisation
-  */
+
+  // Collection of reads or writes including initialisation
   initSPI(); // begin SPI communication
-  init();    // initialise the MAX30009
-//   GSRsettings();//put in correct setting for GSR communication
-  SFBIAsettings(); // put in correct setting for SFBIA communication
+
+  init(); // initialise the MAX30009
+
+  SFBIAsettings(); // Put in correct setting for SFBIA communication
   setMode(0);
 
-  spiBurst(); // begin reading from the FIFO
+  spiBurst(); // Begin reading from the FIFO
 
+  
   printf("error count = %d\n", errCnt);
-
+  
   shutdownSPI();
+  
+  waitCardInserted(); // Wait for SD Card to be inserted
+  generateMessage(1024); // Message to be written to sd card
+  createFile("Test.txt", 1024); // Create and write message to file
 
   printf("Finished\n");
 

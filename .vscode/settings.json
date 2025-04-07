@@ -82,6 +82,9 @@
         "spi.h": "c",
         "gpio.h": "c",
         "mxc_sys.h": "c",
-        "mxc_errors.h": "c"
+        "mxc_errors.h": "c",
+        "sdhc.h": "c",
+        "ff.h": "c",
+        "ffconf.h": "c"
     }
 }
