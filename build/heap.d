@@ -1,34 +1,34 @@
-/Users/osk/maxsdk_ws/UPRM-Multi_Frq-BioZ-Research/build/heap.o: \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Source/heap.c \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/errno.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/errno.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/reent.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/newlib.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/config.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/ieeefp.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/lock.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/unistd.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/unistd.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/cdefs.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/endian.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_endian.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/select.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_sigset.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_timeval.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/timespec.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_timespec.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_pthreadtypes.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/sched.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/types.h
+C:/Users/oscar/OneDrive/Desktop/Work/UPRM-Multi_Frq-BioZ-Research/build/heap.o: \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Source/heap.c \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdint.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdint.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_default_types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/features.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_newlib_version.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_intsup.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_stdint.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/errno.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/errno.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/reent.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_ansi.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/newlib.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/config.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/ieeefp.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stddef.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/cdefs.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/lock.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/unistd.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/unistd.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/endian.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_endian.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/select.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_sigset.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_timeval.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/timespec.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_timespec.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_pthreadtypes.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/sched.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/types.h

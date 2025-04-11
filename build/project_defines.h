@@ -4,10 +4,10 @@
 #define __STDC_UTF_16__ 1
 #define __STDC_UTF_32__ 1
 #define __STDC_HOSTED__ 1
-#define __GNUC__ 10
-#define __GNUC_MINOR__ 3
+#define __GNUC__ 14
+#define __GNUC_MINOR__ 2
 #define __GNUC_PATCHLEVEL__ 1
-#define __VERSION__ "10.3.1 20210824 (release)"
+#define __VERSION__ "14.2.1 20241119"
 #define __ATOMIC_RELAXED 0
 #define __ATOMIC_SEQ_CST 5
 #define __ATOMIC_ACQUIRE 2
@@ -32,6 +32,8 @@
 #define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__
 #define __FLOAT_WORD_ORDER__ __ORDER_LITTLE_ENDIAN__
 #define __SIZEOF_POINTER__ 4
+#define __GNUC_EXECUTION_CHARSET_NAME "UTF-8"
+#define __GNUC_WIDE_EXECUTION_CHARSET_NAME "UTF-32LE"
 #define __SIZE_TYPE__ unsigned int
 #define __PTRDIFF_TYPE__ int
 #define __WCHAR_TYPE__ unsigned int
@@ -67,7 +69,7 @@
 #define __UINT_FAST64_TYPE__ long long unsigned int
 #define __INTPTR_TYPE__ int
 #define __UINTPTR_TYPE__ unsigned int
-#define __GXX_ABI_VERSION 1014
+#define __GXX_ABI_VERSION 1019
 #define __SCHAR_MAX__ 0x7f
 #define __SHRT_MAX__ 0x7fff
 #define __INT_MAX__ 0x7fffffff
@@ -161,6 +163,7 @@
 #define __FLT_HAS_INFINITY__ 1
 #define __FLT_HAS_QUIET_NAN__ 1
 #define __FP_FAST_FMAF 1
+#define __FLT_IS_IEC_60559__ 1
 #define __DBL_MANT_DIG__ 53
 #define __DBL_DIG__ 15
 #define __DBL_MIN_EXP__ (-1021)
@@ -176,6 +179,7 @@
 #define __DBL_HAS_DENORM__ 1
 #define __DBL_HAS_INFINITY__ 1
 #define __DBL_HAS_QUIET_NAN__ 1
+#define __DBL_IS_IEC_60559__ 1
 #define __LDBL_MANT_DIG__ 53
 #define __LDBL_DIG__ 15
 #define __LDBL_MIN_EXP__ (-1021)
@@ -192,6 +196,7 @@
 #define __LDBL_HAS_DENORM__ 1
 #define __LDBL_HAS_INFINITY__ 1
 #define __LDBL_HAS_QUIET_NAN__ 1
+#define __LDBL_IS_IEC_60559__ 1
 #define __FLT32_MANT_DIG__ 24
 #define __FLT32_DIG__ 6
 #define __FLT32_MIN_EXP__ (-125)
@@ -208,6 +213,7 @@
 #define __FLT32_HAS_INFINITY__ 1
 #define __FLT32_HAS_QUIET_NAN__ 1
 #define __FP_FAST_FMAF32 1
+#define __FLT32_IS_IEC_60559__ 1
 #define __FLT64_MANT_DIG__ 53
 #define __FLT64_DIG__ 15
 #define __FLT64_MIN_EXP__ (-1021)
@@ -223,6 +229,7 @@
 #define __FLT64_HAS_DENORM__ 1
 #define __FLT64_HAS_INFINITY__ 1
 #define __FLT64_HAS_QUIET_NAN__ 1
+#define __FLT64_IS_IEC_60559__ 1
 #define __FLT32X_MANT_DIG__ 53
 #define __FLT32X_DIG__ 15
 #define __FLT32X_MIN_EXP__ (-1021)
@@ -238,6 +245,7 @@
 #define __FLT32X_HAS_DENORM__ 1
 #define __FLT32X_HAS_INFINITY__ 1
 #define __FLT32X_HAS_QUIET_NAN__ 1
+#define __FLT32X_IS_IEC_60559__ 1
 #define __SFRACT_FBIT__ 7
 #define __SFRACT_IBIT__ 0
 #define __SFRACT_MIN__ (-0.5HR-0.5HR)
@@ -371,6 +379,8 @@
 #define __GCC_ATOMIC_LONG_LOCK_FREE 2
 #define __GCC_ATOMIC_LLONG_LOCK_FREE 1
 #define __GCC_ATOMIC_TEST_AND_SET_TRUEVAL 1
+#define __GCC_DESTRUCTIVE_SIZE 64
+#define __GCC_CONSTRUCTIVE_SIZE 64
 #define __GCC_ATOMIC_POINTER_LOCK_FREE 2
 #define __HAVE_SPECULATION_SAFE_VALUE 1
 #define __GCC_HAVE_DWARF2_CFI_ASM 1
@@ -382,12 +392,18 @@
 #define __ARM_FEATURE_QBIT 1
 #define __ARM_FEATURE_SAT 1
 #undef __ARM_FEATURE_CRYPTO
+#undef __ARM_FEATURE_AES
+#undef __ARM_FEATURE_SHA2
 #define __ARM_FEATURE_UNALIGNED 1
 #undef __ARM_FEATURE_QRDMX
 #undef __ARM_FEATURE_CRC32
 #undef __ARM_FEATURE_DOTPROD
 #undef __ARM_FEATURE_COMPLEX
 #define __ARM_32BIT_STATE 1
+#undef __ARM_FEATURE_PAUTH
+#undef __ARM_FEATURE_BTI
+#undef __ARM_FEATURE_BTI_DEFAULT
+#undef __ARM_FEATURE_PAC_DEFAULT
 #undef __ARM_FEATURE_MVE
 #undef __ARM_FEATURE_CMSE
 #undef __ARM_FEATURE_LDREX
@@ -450,4 +466,6 @@
 #define LIB_BOARD 1
 #define EXT_FLASH_W25 1
 #define MXC_SPI_V1 1
+#define SDHC_CLK_FREQ 30000000
+#define USE_CLI_LIB_IRQHANDLER 1
 #define MAILBOX_SIZE 0

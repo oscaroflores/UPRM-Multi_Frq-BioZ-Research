@@ -39,6 +39,7 @@ TCHAR message[MAXLEN], directory[MAXLEN], cwd[MAXLEN], filename[MAXLEN], volume_
     volume = '0';
 mxc_gpio_cfg_t SDPowerEnablePin = { MXC_GPIO1, MXC_GPIO_PIN_12, MXC_GPIO_FUNC_OUT,
                                     MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO };
+char new_log_file[64];
 
 // /***** FUNCTIONS *****/
 
@@ -48,6 +49,12 @@ void generateMessage(unsigned length)
         /*Generate some random data to put in file*/
         message[i] = charset[rand() % (sizeof(charset) - 1)];
     }
+}
+
+void setMessage(const char *m)
+{
+    // Copy the user-defined message into the global message buffer
+    snprintf(message, MAXLEN, "%s", m);
 }
 
 int mount()
@@ -238,7 +245,7 @@ int appendFile(char *file_name, unsigned int length)
 
     printf("File opened!\n");
 
-    generateMessage(length);
+    // generateMessage(length);
 
     if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK) {
         printf("Error writing file: %s\n", FF_ERRORS[err]);
@@ -329,6 +336,64 @@ int deleteFile(char *file_name)
 
     printf("Deleted file %s\n", filename);
     return err;
+}
+
+int createNextBiozLogFile()
+{
+    if (!mounted) {
+        mount();
+    }
+
+    int max_n = -1; // Start with -1 to handle the case where no files are found
+    char file_prefix[] = "bioz-log-";
+    char file_extension[] = ".txt";
+    char temp_filename[MAXLEN];
+
+    // Open the current directory
+    if ((err = f_opendir(&dir, cwd)) == FR_OK) {
+        while (1) {
+            err = f_readdir(&dir, &fno);
+            if (err != FR_OK || fno.fname[0] == 0) {
+                break; // End of directory
+            }
+
+            // Check if the file name starts with "bioz-log-"
+            if (strncmp(fno.fname, file_prefix, strlen(file_prefix)) == 0) {
+                // Extract the number after "bioz-log-"
+                char *number_part = fno.fname + strlen(file_prefix);
+                char *dot_position = strchr(number_part, '.');
+                if (dot_position != NULL) {
+                    *dot_position = '\0'; // Temporarily null-terminate to isolate the number
+                    int current_n = atoi(number_part);
+                    if (current_n > max_n) {
+                        max_n = current_n;
+                    }
+                }
+            }
+        }
+        f_closedir(&dir);
+    } else {
+        printf("Error opening directory: %s\n", FF_ERRORS[err]);
+        return err;
+    }
+
+    int next_n = max_n + 1;
+    snprintf(temp_filename, MAXLEN, "%s%d%s", file_prefix, next_n, file_extension); // Create the next file name
+    snprintf(new_log_file, MAXLEN, "%s", temp_filename); // Copy the new file name to the output parameter
+
+    if ((err = f_open(&file, (const TCHAR *)temp_filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+        printf("Error creating file: %s\n", FF_ERRORS[err]);
+        return err;
+    }
+
+    printf("Created file: %s\n", temp_filename);
+
+    if ((err = f_close(&file)) != FR_OK) {
+        printf("Error closing file: %s\n", FF_ERRORS[err]);
+        return err;
+    }
+
+    return FR_OK;
 }
 
 int example()

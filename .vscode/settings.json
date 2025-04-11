@@ -17,7 +17,7 @@
     "target":"MAX32655",
     "board":"FTHR_Apps_P1",
 
-    "project_name":"${workspaceFolderBasename}",
+    "project_name":"UPRM-Multi_Frq-BioZ-Research",
 
     "program_file":"${config:project_name}.elf",
     "symbol_file":"${config:program_file}",
@@ -82,6 +82,12 @@
         "spi.h": "c",
         "gpio.h": "c",
         "mxc_sys.h": "c",
-        "mxc_errors.h": "c"
+        "mxc_errors.h": "c",
+        "spifunctions.h": "c",
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "user-cli.h": "c",
+        "sdhc.h": "c",
+        "stdbool.h": "c"
     }
 }

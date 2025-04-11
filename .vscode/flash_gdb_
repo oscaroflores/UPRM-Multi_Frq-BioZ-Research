@@ -1,0 +1,23 @@
+target extended-remote : is a gdb command that allows 
+gdb to launch/kill processes on openocd remote side
+
+openocd : launches openocd (gdb -> mcu bridge)
+
+gdb port pipe : tells openocd to listen through pipe
+
+init; reset halt : runs after configs are loaded. 
+Initializes openocd and resets target mcu so its reado for flashing
+
+
+
+-- FLAGS --
+
+| : "pipe" so gdb is being connected to 
+openocd subprocess through | (pipe)
+
+-c : tells openocd to execute a command
+
+-s : search for a path
+
+-f : loads debug interface config file (in this case cmsis-dap.cfg). 
+This file tells openocd how to talk to debug probe on mcu.

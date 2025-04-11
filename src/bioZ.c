@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "sdhc.h"
 #include "spiFunctions.h"
 
 extern uint8_t gReadBuf[100];
@@ -302,10 +302,23 @@ int calcBioZ(uint8_t buf[]) {
 
   if (count > 100) {
 
-    printf("%f      ", Q);
-    printf("%f      ", I);
-    printf("%f      ", Z);
-    printf("%f \n", Zbody);
+    printf("Q: %f      ", Q);
+    printf("I: %f      ", I);
+    printf("Z: %f      ", Z);
+    printf("Z_bod: %f \n", Zbody);
+
+    // SD card upload
+    char log_entry[128]; // Increased size to accommodate the formatted string
+    int log_len = snprintf(log_entry, sizeof(log_entry),
+                           "Q: %f      I: %f      Z: %f      Zbody: %f\n",
+                           Q, I, Z, Zbody);
+
+    if (log_len < 0 || log_len >= sizeof(log_entry)) {
+        printf("Error formatting log entry.\n");
+        return -1; // Return an error if snprintf fails
+    }
+    setMessage(log_entry);
+    appendFile(new_log_file, log_len);
   }
 
   return err;

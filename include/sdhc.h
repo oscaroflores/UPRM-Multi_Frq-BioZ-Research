@@ -40,19 +40,21 @@
 #define TOSTRING(x) STRINGIFY(x)
 #define MAXLEN 256
 
+extern char new_log_file[64];
+
 /***** FUNCTION PROTOTYPES *****/
 
 void generateMessage(unsigned length);
 
-int mount(void);
+int mount();
 
-int umount(void);
+int umount();
 
-int formatSDHC(void);
+int formatSDHC();
 
-int getSize(void);
+int getSize();
 
-int ls(void);
+int ls();
 
 int createFile(char *file_name, unsigned int length);
 
@@ -64,8 +66,12 @@ int cd(char *dir_name);
 
 int deleteFile(char *file_name);
 
-int example(void);
+int example();
 
-void waitCardInserted(void);
+void waitCardInserted();
+
+int createNextBiozLogFile();
+
+void setMessage(const char *message);
 
 #endif // EXAMPLES_MAX32655_SDHC_FTHR_INCLUDE_SDHC_H_

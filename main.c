@@ -16,6 +16,7 @@ vital signs depending on necessities
 #include "MAX30009.h"
 #include "MAX32655.h"
 #include "board.h"
+#include "cli.h"
 #include "dma.h"
 #include "led.h"
 #include "mxc_delay.h"
@@ -25,12 +26,14 @@ vital signs depending on necessities
 #include "sdhc.h"
 #include "spi.h"
 #include "uart.h"
+#include "user-cli.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "sdhc.h"
 #include "bioZ.h"
 #include "spiFunctions.h"
 
@@ -47,28 +50,40 @@ uint8_t gHold[100];
 int errCnt;
 extern int count;
 
-int main(void) {
+int main(void)
+{
+  int err;
 
   printf("START\n");
 
+  waitCardInserted();
+
+  // Create file that will store spi burst data
+  createNextBiozLogFile();
+  printf("next bioz log: %s\n", new_log_file);
+
+  while (MXC_UART_GetActive(MXC_UART_GET_UART(CONSOLE_UART)))
+  {
+  }
+
+  // Init CLI
+  if ((err = MXC_CLI_Init(MXC_UART_GET_UART(CONSOLE_UART), user_commands, num_user_commands)) !=
+      E_NO_ERROR)
+  {
+    return err;
+  }
+
   // Collection of reads or writes including initialisation
   initSPI(); // begin SPI communication
-
   init(); // initialise the MAX30009
-
   SFBIAsettings(); // Put in correct setting for SFBIA communication
   setMode(0);
-
   spiBurst(); // Begin reading from the FIFO
 
-  
   printf("error count = %d\n", errCnt);
-  
+
   shutdownSPI();
-  
-  waitCardInserted(); // Wait for SD Card to be inserted
-  generateMessage(1024); // Message to be written to sd card
-  createFile("Test.txt", 1024); // Create and write message to file
+  umount();
 
   printf("Finished\n");
 

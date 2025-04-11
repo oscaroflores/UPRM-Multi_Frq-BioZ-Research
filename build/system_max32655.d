@@ -1,61 +1,50 @@
-/Users/osk/maxsdk_ws/UPRM-Multi_Frq-BioZ-Research/build/system_max32655.o: \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Source/system_max32655.c \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/string.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/newlib.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/config.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/ieeefp.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/reent.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/lock.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/cdefs.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_locale.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/strings.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/string.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdio.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdarg.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/endian.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_endian.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/select.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_sigset.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_timeval.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/timespec.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_timespec.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_pthreadtypes.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/sched.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/types.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/stdio.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdlib.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/stdlib.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/alloca.h \
+C:/Users/oscar/OneDrive/Desktop/Work/UPRM-Multi_Frq-BioZ-Research/build/system_max32655.o: \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Source/system_max32655.c \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/string.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_ansi.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/newlib.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_newlib_version.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/config.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/ieeefp.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/features.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/reent.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_ansi.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stddef.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/cdefs.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_default_types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_types.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/lock.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_locale.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/strings.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/string.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdio.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdarg.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/stdio.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdlib.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/stdlib.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/alloca.h \
  include/max32655.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
- /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/system_max32655.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_errors.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/flc_regs.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/icc.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/icc_regs.h \
- /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/simo.h \
- /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/simo_regs.h
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdint.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdint.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_intsup.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_stdint.h \
+ C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
+ C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
+ C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
+ C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
+ C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/system_max32655.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_errors.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/flc_regs.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/icc.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/icc_regs.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/simo.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/simo_regs.h
