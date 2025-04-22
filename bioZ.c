@@ -8,6 +8,7 @@
 #include "mxc_pins.h"
 #include "nvic_table.h"
 #include "spi.h"
+#include "tmr.h"
 #include "uart.h"
 #include <math.h>
 #include <stdbool.h>
@@ -15,7 +16,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mxc_delay.h"
+#include "mxc_sys.h"
 #include "spiFunctions.h"
+
+uint32_t start_time_ms;
 
 extern uint8_t gReadBuf[100];
 uint8_t adcIData[10];
@@ -60,11 +65,12 @@ void GSRsettings() {
 }
 void SFBIAsettings() {
   /*
-  These are the necessary settings to measure MFBIA
+  These are the necessary settings to measure SFBIA
 
 
   */
   regWrite(0x10, 0x00);
+  // regWrite(0x11, 0x02);
   regWrite(0x12, 0x04);
   regWrite(0x13, 0x00);
   regWrite(0x14, 0x00);
@@ -72,7 +78,7 @@ void SFBIAsettings() {
   regWrite(0x18, 0xFF);
   regWrite(0x19, 0x01);
   regWrite(0x1A, 0x20);
-  regWrite(0x20, 0xFF);
+  regWrite(0x20, 0xF7);
   regWrite(0x21, 0x20);
   regWrite(0x22, 0x28);
   regWrite(0x23, 0x00);
@@ -84,6 +90,7 @@ void SFBIAsettings() {
   regWrite(0x41, 0x06);
   regWrite(0x42, 0x01);
   regWrite(0x43, 0xA0);
+  regWrite(0x44, 0xD1);
   regWrite(0x50, 0x00);
   regWrite(0x51, 0x00);
   regWrite(0x58, 0x07);
@@ -127,12 +134,12 @@ void setMode(int mode) {
     changeReg(0x20, 0x3, 7, 2); // step 1: set BIOZ_DAC_OSR = 256
     changeReg(0x17, 0x9, 4,
               4); // step 2: set KDIV to get PLL_CLK in range --512
-    setMdiv(532);
+    setMdiv(512);
     changeReg(0x17, 1, 5, 1);    // step4: NDIV to 1, meaning 1024
     changeReg(0x20, 0x07, 5, 3); // step 5: BIOZ_ADC_OSR to 7, meaning 1024
 
-    changeReg(0x25, 1, 6, 1); // dc restore
-    changeReg(0x25, 0, 7, 1); // bypass Cext
+    // changeReg(0x25, 1, 6, 1); // dc restore
+    // changeReg(0x25, 0, 7, 1); // bypass Cext
   }
 
   if (mode == 1) {
@@ -288,7 +295,7 @@ int calcBioZ(uint8_t buf[]) {
 
   double mag = sqrt(pow(I, 2) + pow(Q, 2));
 
-  double current = 905E-9; // this depends on settings
+  double current = 32E-6; // for mode 14 change to 256uA
 
   double p = pow(2, 19) * 1 * (2 / 3.14) * (current);
   double Z = mag / p;
@@ -302,10 +309,13 @@ int calcBioZ(uint8_t buf[]) {
 
   if (count > 100) {
 
-    printf("%f      ", Q);
-    printf("%f      ", I);
-    printf("%f      ", Z);
-    printf("%f \n", Zbody);
+    uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
+    printf("%lu ticks\t", ticks);
+
+    printf("%f\t", Q);
+    printf("%f\t", I);
+    printf("%f\t", Z);
+    printf("%f\n", Zbody);
   }
 
   return err;
