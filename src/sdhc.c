@@ -198,7 +198,7 @@ int createFile(char *file_name, unsigned int length)
         return err;
     }
 
-    printf("File opened!\n");
+    // printf("File opened!\n");
 
     generateMessage(length);
 
@@ -243,7 +243,7 @@ int appendFile(char *file_name, unsigned int length)
         return err;
     }
 
-    printf("File opened!\n");
+    // printf("File opened!\n");
 
     // generateMessage(length);
 
@@ -437,7 +437,7 @@ int example()
         return err;
     }
 
-    printf("File opened!\n");
+    // printf("File opened!\n");
 
     generateMessage(length);
 

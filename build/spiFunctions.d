@@ -1,5 +1,5 @@
 C:/Users/oscar/OneDrive/Desktop/Work/UPRM-Multi_Frq-BioZ-Research/build/spiFunctions.o: \
- src/spiFunctions.c include/MAX30009.h include/MAX32655.h \
+ spiFunctions.c include/MAX30009.h include/MAX32655.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdint.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdint.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_default_types.h \

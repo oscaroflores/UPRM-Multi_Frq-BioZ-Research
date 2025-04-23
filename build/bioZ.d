@@ -52,6 +52,9 @@ C:/Users/oscar/OneDrive/Desktop/Work/UPRM-Multi_Frq-BioZ-Research/build/bioZ.o: 
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_lock.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/tmr_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/math.h \
@@ -65,4 +68,5 @@ C:/Users/oscar/OneDrive/Desktop/Work/UPRM-Multi_Frq-BioZ-Research/build/bioZ.o: 
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/alloca.h \
  C:/MaximSDK/Libraries/SDHC/ff15/source/ff.h \
  C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
  include/spiFunctions.h include/MAX30009.h include/MAX32655.h
