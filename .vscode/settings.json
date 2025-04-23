@@ -88,6 +88,10 @@
         "stdint.h": "c",
         "user-cli.h": "c",
         "sdhc.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "string.h": "c",
+        "mxc_pins.h": "c",
+        "max30009.h": "c",
+        "nvic_table.h": "c"
     }
 }
