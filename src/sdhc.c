@@ -252,14 +252,14 @@ int appendFile(char *file_name, unsigned int length)
         return err;
     }
 
-    printf("%d bytes written to file\n", bytes_written);
+    // printf("%d bytes written to file\n", bytes_written);
 
     if ((err = f_close(&file)) != FR_OK) {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
         return err;
     }
 
-    printf("File closed.\n");
+    // printf("File closed.\n");
     return err;
 }
 
@@ -386,7 +386,7 @@ int createNextBiozLogFile()
         return err;
     }
 
-    printf("Created file: %s\n", temp_filename);
+    // printf("Created file: %s\n", temp_filename);
 
     if ((err = f_close(&file)) != FR_OK) {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
@@ -543,8 +543,6 @@ void waitCardInserted()
     if (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) == 0) {
         return;
     }
-
-    printf("Insert SD card to continue.\n");
 
     while (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) != 0) {
         // Spin waiting for card to be inserted.

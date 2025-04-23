@@ -60,7 +60,6 @@ int main(void)
 
   // Create file that will store spi burst data
   createNextBiozLogFile();
-  printf("next bioz log: %s\n", new_log_file);
 
   while (MXC_UART_GetActive(MXC_UART_GET_UART(CONSOLE_UART)))
   {
