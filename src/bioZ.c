@@ -310,11 +310,11 @@ int calcBioZ(uint8_t buf[]) {
   if (count > 100) {
 
     uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-    printf("%lu ticks\t", ticks);
-    printf("Q: %f\t", Q);
-    printf("I: %f\t", I);
-    printf("Z: %f\t", Z);
-    printf("Z_bod: %f\n", Zbody);
+    // printf("%lu\t", ticks);
+    printf("%f\t", Q);
+    printf("%f\t", I);
+    printf("%f\t", Z);
+    printf("%f\n", Zbody);
 
     // SD card upload
     char log_entry[128]; // Increased size to accommodate the formatted string
