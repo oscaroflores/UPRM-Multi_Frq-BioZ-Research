@@ -35,11 +35,11 @@ vital signs depending on necessities
 #include <stdio.h>
 #include <string.h>
 
-#include "sdhc.h"
 #include "bioZ.h"
+#include "sdhc.h"
 #include "spiFunctions.h"
 #include "tmr.h"
-
+#include <stdbool.h>
 /***** Definitions *****/
 #define SPI_SPEED 1000000 // Bit Rate
 
@@ -53,8 +53,7 @@ uint8_t gHold[100];
 int errCnt;
 extern int count;
 
-int main(void)
-{
+int main(void) {
   int err;
 
   printf("START\n");
@@ -64,14 +63,12 @@ int main(void)
   // Create file that will store spi burst data
   createNextBiozLogFile();
 
-  while (MXC_UART_GetActive(MXC_UART_GET_UART(CONSOLE_UART)))
-  {
+  while (MXC_UART_GetActive(MXC_UART_GET_UART(CONSOLE_UART))) {
   }
 
   // Init CLI
-  if ((err = MXC_CLI_Init(MXC_UART_GET_UART(CONSOLE_UART), user_commands, num_user_commands)) !=
-      E_NO_ERROR)
-  {
+  if ((err = MXC_CLI_Init(MXC_UART_GET_UART(CONSOLE_UART), user_commands,
+                          num_user_commands)) != E_NO_ERROR) {
     return err;
   }
 
@@ -89,10 +86,15 @@ int main(void)
   tmr_cfg.bitMode = TMR_BIT_MODE_32;
   tmr_cfg.clock = MXC_TMR_APB_CLK;
 
-  MXC_TMR_Init(MXC_TMR0, &tmr_cfg, false); // false = don't reinit pins
+  MXC_TMR_Init(MXC_TMR0, &tmr_cfg, false);
   MXC_TMR_Start(MXC_TMR0);
   start_time_ms = MXC_TMR_GetCount(MXC_TMR0);
-  spiBurst(); // begin reading from the FIFO
+  while (1) {
+    if (isRecording) {
+      spiBurst();
+    }
+    MXC_Delay(MXC_DELAY_MSEC(10)); // <<< ADD THIS
+  }
 
   printf("error count = %d\n", errCnt);
 

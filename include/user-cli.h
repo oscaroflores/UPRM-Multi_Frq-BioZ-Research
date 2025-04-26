@@ -26,6 +26,7 @@
 /* -------------------------------------------------- */
 extern const command_t user_commands[];
 extern const unsigned int num_user_commands;
+extern bool isRecording;
 
 /* -------------------------------------------------- */
 //             FUNCTION PROTOTYPES
@@ -52,4 +53,7 @@ int handle_fatfs(int argc, char *argv[]);
 
 int handle_unmount(int argc, char *argv[]);
 
+int handle_start(int argc, char *argv[]);
+
+int handle_stop(int argc, char *argv[]);
 #endif // EXAMPLES_MAX32655_SDHC_FTHR_INCLUDE_USER_CLI_H_
