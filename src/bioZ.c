@@ -74,11 +74,11 @@ void SFBIAsettings() {
   regWrite(0x12, 0x04);
   regWrite(0x13, 0x00);
   regWrite(0x14, 0x00);
-  regWrite(0x17, 0xA1);
+  regWrite(0x17, 0x81);
   regWrite(0x18, 0x49);
   regWrite(0x19, 0x01);
   regWrite(0x1A, 0x20);
-  regWrite(0x20, 0xA7);
+  regWrite(0x20, 0xBF);
   regWrite(0x21, 0x20);
   regWrite(0x22, 0x28);
   regWrite(0x23, 0x00);
@@ -307,14 +307,14 @@ int calcBioZ(uint8_t buf[]) {
 
   Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
 
-  if (count > 100) {
+  // if (count > 100) {
 
     uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-    // printf("%lu\t", ticks);
+    printf("%lu\t", ticks);
     printf("%f\t", Q);
-    printf("%f\t", I);
-    printf("%f\t", Z);
-    printf("%f\n", Zbody);
+     printf("%f\n", I);
+    // printf("%f\t", Z);
+    // printf("%f\n", Zbody);
 
     // SD card upload
     char log_entry[128]; // Increased size to accommodate the formatted string
@@ -328,7 +328,7 @@ int calcBioZ(uint8_t buf[]) {
     }
     setMessage(log_entry);
     appendFile(new_log_file, log_len);
-  }
+  // }
 
   return err;
 }
