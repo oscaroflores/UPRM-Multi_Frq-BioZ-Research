@@ -77,83 +77,6 @@ void setupMax30009Interrupt(void) {
 
   NVIC_EnableIRQ(MXC_GPIO_GET_IRQ(0)); // Enable NVIC interrupt for GPIO0 block
 }
-void GPIO_InterruptSelfTest(void) {
-  printf("Starting GPIO Interrupt Self-Test...\n");
-
-  // 1. Check if P0.25 is input
-  uint32_t dir = MXC_GPIO0->outen;
-  if (dir & MXC_GPIO_PIN_25) {
-    printf("[FAIL] P0.25 is configured as OUTPUT. Should be INPUT!\n");
-  } else {
-    printf("[PASS] P0.25 is configured as INPUT.\n");
-  }
-
-  // 2. Check if interrupt enabled for P0.25
-  uint32_t int_en = MXC_GPIO0->inten;
-  if (int_en & MXC_GPIO_PIN_25) {
-    printf("[PASS] P0.25 interrupt is ENABLED.\n");
-  } else {
-    printf("[FAIL] P0.25 interrupt is NOT enabled!\n");
-  }
-
-  // 3. Check if edge config is FALLING
-  uint32_t int_mode = MXC_GPIO0->intmode;
-  uint32_t int_pol = MXC_GPIO0->intpol;
-  if ((int_mode & MXC_GPIO_PIN_25) && !(int_pol & MXC_GPIO_PIN_25)) {
-    printf("[PASS] P0.25 interrupt configured for FALLING edge.\n");
-  } else {
-    printf("[FAIL] P0.25 not correctly set for FALLING edge!\n");
-  }
-
-  // 4. Check if NVIC IRQ for GPIO0 is enabled
-  if (NVIC_GetEnableIRQ(MXC_GPIO_GET_IRQ(0))) {
-    printf("[PASS] NVIC interrupt for GPIO0 block is ENABLED.\n");
-  } else {
-    printf("[FAIL] NVIC interrupt for GPIO0 block is NOT enabled!\n");
-  }
-
-  // 5. Check if INTB is physically low right now
-  if (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_25) == 0) {
-    printf("[INFO] INTB (P0.25) is currently LOW — sensor is asserting "
-           "interrupt.\n");
-  } else {
-    printf("[INFO] INTB (P0.25) is currently HIGH — sensor idle.\n");
-  }
-
-  printf("GPIO Interrupt Self-Test completed.\n");
-}
-
-void buttonISR(void *unused) {
-  // Clear the interrupt flag
-  MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_2);
-
-  // Set our flag
-  buttonPressed = true;
-}
-
-void setupButtonInterrupt() {
-  mxc_gpio_cfg_t sensorPin = {
-      .port = MXC_GPIO0,
-      .mask = MXC_GPIO_PIN_25,
-      .func = MXC_GPIO_FUNC_IN,
-      .pad = MXC_GPIO_PAD_PULL_UP, // Enable pull-up resistor because button
-                                   // pulls low
-      .vssel = MXC_GPIO_VSSEL_VDDIO};
-
-  MXC_GPIO_Config(&sensorPin);
-
-  // Register the ISR
-  MXC_GPIO_RegisterCallback(&sensorPin, sensorISR, NULL);
-
-  // Configure interrupt on falling edge
-  MXC_GPIO_IntConfig(&sensorPin, MXC_GPIO_INT_FALLING);
-
-  // Enable GPIO interrupt for this pin
-  MXC_GPIO_EnableInt(sensorPin.port, sensorPin.mask);
-
-  // Enable the GPIO0 block interrupt in NVIC
-  NVIC_EnableIRQ(MXC_GPIO_GET_IRQ(0));
-}
 
 int main(void) {
   int err;
@@ -177,7 +100,6 @@ int main(void) {
 
   setupMax30009Interrupt(); // <<< YOU ADD THIS FUNCTION CALL <<<
 
-  GPIO_InterruptSelfTest();
   // <<< NEW: Setup GPIO interrupt for P0_25 here >>>
 
   // Setup timer (you already have this, no changes)
@@ -195,9 +117,8 @@ int main(void) {
 
   // Main loop
   while (1) {
-  
+
     regRead(0x00);
-  
   }
 
   printf("error count = %d\n", errCnt);
