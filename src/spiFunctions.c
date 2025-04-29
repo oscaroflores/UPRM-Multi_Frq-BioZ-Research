@@ -38,6 +38,7 @@ int initSPI() {
   Function to start SPI communication - called at start of main
 
   */
+
   int retVal;
 
   spi_pins.clock = TRUE;
@@ -214,20 +215,19 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits) {
 }
 
 int spiBurst() {
+
   uint8_t regAddr = 0x0C;
   int err = 0;
   for (int burstTry = 0; burstTry < 34; burstTry++) {
     // Get FIFO count
+    if (!isRecording) {
+      break;
+    }
+    regRead(0x00); // Read and clear status registers
     regRead(0x0A);
     uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
     regRead(0x0B);
     fifoCount += gReadBuf[2];
-
-    if (fifoCount <= 6)
-      break;
-    if (!isRecording) {
-      break;
-    }
     uint8_t tx_buf[fifoCount];
     uint8_t rx_buf[fifoCount];
     memset(tx_buf, 0, fifoCount);

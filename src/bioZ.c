@@ -6,8 +6,11 @@
 #include "mxc_delay.h"
 #include "mxc_device.h"
 #include "mxc_pins.h"
+#include "mxc_sys.h"
 #include "nvic_table.h"
+#include "sdhc.h"
 #include "spi.h"
+#include "spiFunctions.h"
 #include "tmr.h"
 #include "uart.h"
 #include <math.h>
@@ -15,10 +18,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "sdhc.h"
-#include "mxc_delay.h"
-#include "mxc_sys.h"
-#include "spiFunctions.h"
 
 uint32_t start_time_ms;
 
@@ -94,7 +93,7 @@ void SFBIAsettings() {
   regWrite(0x50, 0x00);
   regWrite(0x51, 0x00);
   regWrite(0x58, 0x07);
-  regWrite(0x80, 0x80);
+  regWrite(0x80, 0xA0);
   regWrite(0x81, 0x00);
 }
 
@@ -200,7 +199,7 @@ int calcBioZ(uint8_t buf[]) {
   This function uses the readings from the FIFO register
 
   */
-  count++;
+
   uint8_t x1[3], x2[3];
   int i, err = 0;
 
@@ -293,42 +292,38 @@ int calcBioZ(uint8_t buf[]) {
   } else
     Q = adcQ;
 
-  double mag = sqrt(pow(I, 2) + pow(Q, 2));
+  // double mag = sqrt(pow(I, 2) + pow(Q, 2));
 
-  double current = 32E-6; // for mode 14 change to 256uA
+  // double current = 32E-6; // for mode 14 change to 256uA
 
-  double p = pow(2, 19) * 1 * (2 / 3.14) * (current);
-  double Z = mag / p;
+  // double p = pow(2, 19) * 1 * (2 / 3.14) * (current);
+  // double Z = mag / p;
 
-  double Rdc, Ziso1, Ziso2, Zbody;
-  Rdc = 10E6;
-  Ziso1 = 5429 / 2;
-  Ziso2 = 5429 / 2;
+  // double Rdc, Ziso1, Ziso2, Zbody;
+  // Rdc = 10E6;
+  // Ziso1 = 5429 / 2;
+  // Ziso2 = 5429 / 2;
 
-  Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
+  // Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
 
-  // if (count > 100) {
+  uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
+  printf("%lu\t", ticks / 60000);
+  printf("%f\t", Q);
+  // printf("overflow: %d\n", regRead(0x0A) & 0x80);
+  printf("%f\n", I);
+  // printf("%f\t", Z);
+  // printf("%f\n", Zbody);
 
-    uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-    printf("%lu\t", ticks);
-    printf("%f\t", Q);
-     printf("%f\n", I);
-    // printf("%f\t", Z);
-    // printf("%f\n", Zbody);
+  // SD card upload
+  char log_entry[128]; // Increased size to accommodate the formatted string
+  int log_len = snprintf(log_entry, sizeof(log_entry), " %f %f  \n", Q, I);
 
-    // SD card upload
-    char log_entry[128]; // Increased size to accommodate the formatted string
-    int log_len = snprintf(log_entry, sizeof(log_entry),
-                           "ticks: %lu     Q: %f      I: %f      Z: %f      Zbody: %f\n",
-                           ticks, Q, I, Z, Zbody);
-
-    if (log_len < 0 || log_len >= sizeof(log_entry)) {
-        printf("Error formatting log entry.\n");
-        return -1; // Return an error if snprintf fails
-    }
-    setMessage(log_entry);
-    appendFile(new_log_file, log_len);
-  // }
+  if (log_len < 0 || log_len >= sizeof(log_entry)) {
+    printf("Error formatting log entry.\n");
+    return -1; // Return an error if snprintf s
+  }
+  setMessage(log_entry);
+  appendFile(new_log_file, log_len);
 
   return err;
 }

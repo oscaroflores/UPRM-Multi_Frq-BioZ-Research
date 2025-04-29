@@ -56,28 +56,29 @@
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_delay.h \
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/nvic_table.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/spi.h \
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
  /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
  /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_lock.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/tmr_regs.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/math.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/string.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_locale.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/strings.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/string.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/nvic_table.h \
  include/sdhc.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdlib.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/stdlib.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/alloca.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/string.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_locale.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/strings.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/string.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
  /home/ricardo/MaximSDK/Libraries/SDHC/ff15/source/ff.h \
  /home/ricardo/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
- include/spiFunctions.h include/MAX30009.h include/MAX32655.h
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/spi.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_lock.h \
+ include/spiFunctions.h \
+ /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/math.h \
+ include/MAX30009.h include/MAX32655.h \
+ /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/tmr_regs.h \
+ /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h

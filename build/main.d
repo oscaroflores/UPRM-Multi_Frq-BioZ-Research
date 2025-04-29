@@ -26,7 +26,7 @@
  /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
  /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdbool.h \
- include/MAX30009.h include/MAX32655.h \
+ include/MAX30009.h include/MAX32655.h include/bioZ.h \
  /home/ricardo/MaximSDK/Libraries/Boards/MAX32655/FTHR_Apps_P1/Include/board.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdio.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
@@ -80,7 +80,6 @@
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/spi.h \
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
  /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_lock.h \
- include/user-cli.h \
+ include/spiFunctions.h \
  /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/math.h \
- include/bioZ.h include/spiFunctions.h include/MAX30009.h \
- include/MAX32655.h
+ include/MAX30009.h include/MAX32655.h include/user-cli.h
