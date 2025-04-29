@@ -20,11 +20,12 @@
  ******************************************************************************/
 #include "cli.h"
 
+#include "spiFunctions.h"
+
 #include "sdhc.h"
 #include "user-cli.h"
 #include <stdlib.h>
 
-bool isRecording = false;
 const command_t user_commands[] = {
     {"size", "size", "Find the Size of the SD Card and Free Space",
      handle_size},
@@ -153,7 +154,7 @@ int handle_start(int argc, char *argv[]) {
     printf("Incorrect usage. No parameters needed.\n");
     return E_INVALID;
   }
-  isRecording = true;
+  regWrite(0x20, 0xBF);
   printf("Started recording.\n");
   return E_NO_ERROR;
 }
@@ -163,7 +164,7 @@ int handle_stop(int argc, char *argv[]) {
     printf("Incorrect usage. No parameters needed.\n");
     return E_INVALID;
   }
-  isRecording = false;
+  regWrite(0x20, 0x00);
   printf("Stopped recording.\n");
   return E_NO_ERROR;
 }

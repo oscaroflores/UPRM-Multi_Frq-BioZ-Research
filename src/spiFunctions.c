@@ -220,9 +220,7 @@ int spiBurst() {
   int err = 0;
   for (int burstTry = 0; burstTry < 34; burstTry++) {
     // Get FIFO count
-    if (!isRecording) {
-      break;
-    }
+
     regRead(0x00); // Read and clear status registers
     regRead(0x0A);
     uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
