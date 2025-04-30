@@ -27,7 +27,9 @@ uint8_t adcQData[10];
 extern uint8_t IMag;
 extern int count;
 extern int errCnt;
-
+//sample interval
+uint32_t sample_interval_us = 0;  // make accessible from main if needed
+// uint32_t sr_bioz ;
 void GSRsettings() {
   /*
 
@@ -62,6 +64,22 @@ void GSRsettings() {
   regWrite(0x80, 0x80);
   regWrite(0x81, 0x00);
 }
+void setMdiv(int val) {
+  /*
+  This function is specifically to change the M divider value
+  as it spans over two seperate registers
+
+
+  */
+  uint32_t V = val;
+
+  uint8_t a = V >> 8;
+
+  uint8_t b = V & 0xFF;
+
+  changeReg(0x17, a, 7, 2); // step 3:
+  changeReg(0x18, b, 7, 8); // MDIV
+}
 void SFBIAsettings() {
   /*
   These are the necessary settings to measure SFBIA
@@ -77,7 +95,7 @@ void SFBIAsettings() {
   regWrite(0x18, 0x49);
   regWrite(0x19, 0x01);
   regWrite(0x1A, 0x20);
-  regWrite(0x20, 0xBF);
+  regWrite(0x20, 0x00);
   regWrite(0x21, 0x20);
   regWrite(0x22, 0x28);
   regWrite(0x23, 0x00);
@@ -95,106 +113,58 @@ void SFBIAsettings() {
   regWrite(0x58, 0x07);
   regWrite(0x80, 0xA0);
   regWrite(0x81, 0x00);
+  changeReg(0x17, 1, 5, 1);       // NDIV = 1 (1024)
+changeReg(0x20, 6, 4, 3);       // ADC_OSR index 6 → 512
+setMdiv(586);                   // MDIV = 586
+
 }
 
-void setMdiv(int val) {
-  /*
-  This function is specifically to change the M divider value
-  as it spans over two seperate registers
 
+uint32_t getRefClkHz() {
 
-  */
-  uint32_t V = val;
+    uint8_t ref_clk_sel = regRead(0x1A) & 0b01000000;      // Bit 6
+    uint8_t clk_freq_sel = regRead(0x1A) & 0b00100000;     // Bit 5
+  // printf("ref_clk_sel: %d\t", ref_clk_sel);
+  // printf("clk_freq_sel: %d\n", clk_freq_sel);
+    if (ref_clk_sel == 0) {
+        // Internal oscillator
+        return (clk_freq_sel == 0) ? 32000 : 32768;
+    } else {
+        // External oscillator
+        return (clk_freq_sel == 0) ? 32000 : 32768;
+    }
+}
+double sr_bioz;
 
-  uint8_t a = V >> 8;
+double getSampleIntervalUS() {
+    uint32_t ref_clk = getRefClkHz();
 
-  uint8_t b = V & 0xFF;
+    uint8_t mdiv_high = (regRead(0x17) >> 6) & 0x03;
+    uint8_t mdiv_low = regRead(0x18);
+    uint16_t mdiv = (mdiv_high << 8) | mdiv_low;
 
-  changeReg(0x17, a, 7, 2); // step 3:
-  changeReg(0x18, b, 7, 8); // MDIV
+    double pll_clk = (double)ref_clk * (mdiv + 1);
+
+    uint8_t ndiv_raw = (regRead(0x17) >> 5) & 0x01;
+    double ndiv = (ndiv_raw == 0) ? 512.0 : 1024.0;
+
+    uint8_t adc_osr_raw = (regRead(0x20) >> 2) & 0x07;
+    uint16_t adc_osr_table[] = {8, 16, 32, 64, 128, 256, 512, 1024};
+    double bioz_adc_osr = adc_osr_table[adc_osr_raw];
+
+    sr_bioz = pll_clk / (ndiv * bioz_adc_osr);
+    printf("SR: %.4f\n", sr_bioz);  // Prints with more decimal places
+
+    if (sr_bioz == 0.0) return 0.0;
+    return 1000000.0 / sr_bioz;
 }
 
-void setMode(int mode) {
 
-  /*
-
-  There are many modes available in the MAX30009 data sheet. This function
-  allows you to set the registers according to each of those modes simply by
-  entering the number of the mode.
+  
 
 
-  **** not all modes available so far ****
 
-
-  */
-  // using EX4
-
-  if (mode == 0) {              // from BU advice
-    changeReg(0x20, 0x3, 7, 2); // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0x9, 4,
-              4); // step 2: set KDIV to get PLL_CLK in range --512
-    setMdiv(512);
-    changeReg(0x17, 1, 5, 1);    // step4: NDIV to 1, meaning 1024
-    changeReg(0x20, 0x07, 5, 3); // step 5: BIOZ_ADC_OSR to 7, meaning 1024
-
-    // changeReg(0x25, 1, 6, 1); // dc restore
-    // changeReg(0x25, 0, 7, 1); // bypass Cext
-  }
-
-  if (mode == 1) {
-    changeReg(0x20, 0x3, 7, 2); // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0xD, 3,
-              4); // step 2: set KDIV to get PLL_CLK in range --8192
-    changeReg(0x17, 0x04, 7, 2); // step 3:
-    changeReg(0x18, 0x12, 7, 8); // MDIV to 511
-    changeReg(0x17, 1, 5, 1);    // step4: NDIV to 1, meaning 1024
-    changeReg(0x20, 0x07, 5, 3); // step 5: BIOZ_ADC_OSR to 7, meaning 1024
-  }
-
-  if (mode == 2) {
-    changeReg(0x20, 0x3, 7, 2); // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0xA, 3,
-              4);             // step 2: set KDIV to get PLL_CLK in range --1024
-    setMdiv(799);             // step 3: MDIV to 799
-    changeReg(0x17, 1, 5, 1); // step4: NDIV to 1, meaning 1024
-    changeReg(0x20, 0x04, 5, 3); // step 5: BIOZ_ADC_OSR to 4, meaning 128
-  }
-
-  if (mode == 3) {
-    changeReg(0x20, 0x3, 7, 2); // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0x6, 3, 4); // step 2: set KDIV to get PLL_CLK in range -64
-    setMdiv(499);
-    changeReg(0x17, 0x0, 5, 1);  // step4: NDIV to 1, meaning 512
-    changeReg(0x20, 0x04, 5, 3); // step 5: BIOZ_ADC_OSR to 4, meaning 128
-  }
-
-  if (mode == 4) {
-    changeReg(0x20, 0x3, 7, 2); // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0x3, 3, 4); // step 2: set KDIV to get PLL_CLK in range --8
-    setMdiv(624);
-    changeReg(0x17, 1, 5, 1);    // step4: NDIV to 1, meaning 1024
-    changeReg(0x20, 0x04, 5, 3); // step 5: BIOZ_ADC_OSR to 4, meaning 128
-  }
-
-  if (mode == 5) {
-    changeReg(0x20, 0x3, 7, 2);  // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0x1, 3, 4);  // step 2: set KDIV to get PLL_CLK in range --8
-    changeReg(0x17, 0x02, 7, 2); // step 3:
-    changeReg(0x18, 0x70, 7, 8); // MDIV to 624
-    changeReg(0x17, 1, 5, 1);    // step4: NDIV to 1, meaning 1024
-    changeReg(0x20, 0x04, 5, 3); // step 5: BIOZ_ADC_OSR to 4, meaning 128
-  }
-
-  if (mode == 6) {
-    changeReg(0x20, 0x3, 7, 2);  // step 1: set BIOZ_DAC_OSR = 256
-    changeReg(0x17, 0x0, 3, 4);  // step 2: set KDIV to get PLL_CLK in range --1
-    setMdiv(427);                // step 3: MDIV to 799
-    changeReg(0x17, 0, 5, 1);    // step4: NDIV to 0, meaning 512
-    changeReg(0x20, 0x04, 5, 3); // step 5: BIOZ_ADC_OSR to 4, meaning 128
-  }
-}
-
-int calcBioZ(uint8_t buf[]) {
+int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
   /*
   This function uses the readings from the FIFO register
 
@@ -307,10 +277,12 @@ int calcBioZ(uint8_t buf[]) {
   // Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
 
   uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-  printf("%lu\t", ticks / 60000);
-  printf("%f\t", Q);
-  // printf("overflow: %d\n", regRead(0x0A) & 0x80);
-  printf("%f\n", I);
+  // printf("%lu\t", (timestamp_us - start_time_ms) / 1000000);  // seconds since start
+  // printf("%lu\t", (timestamp_us - start_time_ms) / 1000);  // in milliseconds
+  // printf("%f\n", sr_bioz);  // sample number
+  // printf("%f\t", Q);
+  // // printf("overflow: %d\n", regRead(0x0A) & 0x80);
+  // printf("%f\n", I);
   // printf("%f\t", Z);
   // printf("%f\n", Zbody);
 

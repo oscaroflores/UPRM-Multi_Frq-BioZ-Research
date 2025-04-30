@@ -51,13 +51,42 @@ uint8_t gHold[100];
 int errCnt;
 extern int count;
 volatile bool fifoNeedsService = false; // Global
-
+extern uint32_t sample_interval_us;
 volatile bool buttonPressed = false; // Global flag
+void buttonISR(void *unused) {
+  // 1. Clear the GPIO interrupt flag
+  MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_2);
+
+  if(regRead(0x20)==0x00){
+    regWrite(0x20,0xBF);
+  }
+  else{
+    regWrite(0x20,0x00);
+  }
+}
+void setupButtonInterrupt(){
+    mxc_gpio_cfg_t intaPin = {
+      .port = MXC_GPIO0,
+      .mask = MXC_GPIO_PIN_2,
+      .func = MXC_GPIO_FUNC_IN,
+      .pad = MXC_GPIO_PAD_PULL_UP,  // <-- Enable internal pull-up
+      .vssel = MXC_GPIO_VSSEL_VDDIO // or VDDIOH if you use 3.3V IO
+  };
+
+  MXC_GPIO_Config(&intaPin);
+
+  MXC_GPIO_RegisterCallback(&intaPin, buttonISR, NULL);
+  MXC_GPIO_IntConfig(&intaPin, MXC_GPIO_INT_FALLING); // Detect falling edge
+  MXC_GPIO_EnableInt(intaPin.port, intaPin.mask);
+
+  NVIC_EnableIRQ(MXC_GPIO_GET_IRQ(0)); // Enable NVIC interrupt for GPIO0 block
+}
 void sensorISR(void *unused) {
   // 1. Clear the GPIO interrupt flag
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_25);
 
   // 2. Call your main AFE interrupt handler
+  
   spiBurst();
 }
 void setupMax30009Interrupt(void) {
@@ -97,7 +126,7 @@ int main(void) {
   initSPI();       // Setup SPI
   init();          // Setup sensor (MAX30009)
   SFBIAsettings(); // Set up correct sensor registers for SFBIA
-
+  setupButtonInterrupt(NULL);
   setupMax30009Interrupt(); // <<< YOU ADD THIS FUNCTION CALL <<<
 
   // <<< NEW: Setup GPIO interrupt for P0_25 here >>>
@@ -113,7 +142,7 @@ int main(void) {
 
   MXC_TMR_Init(MXC_TMR0, &tmr_cfg, false);
   MXC_TMR_Start(MXC_TMR0);
-  start_time_ms = MXC_TMR_GetCount(MXC_TMR0);
+  sample_interval_us = getSampleIntervalUS();
 
   // Main loop
   while (1) {
