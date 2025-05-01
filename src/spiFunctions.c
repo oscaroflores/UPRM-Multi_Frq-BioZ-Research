@@ -10,6 +10,7 @@
 #include "mxc_pins.h"
 #include "nvic_table.h"
 #include "spi.h"
+#include "tmr.h"
 #include "uart.h"
 #include "user-cli.h"
 #include <math.h>
@@ -17,7 +18,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "tmr.h"
 extern bool isRecording; // Global variable to track recording state
 /***** Definitions *****/
 #define SPI_SPEED 1000000 // Bit Rate
@@ -34,8 +34,6 @@ mxc_spi_req_t req;
 int count;
 extern int errCnt;
 extern uint32_t sample_interval_us;
-
-
 
 int initSPI() {
   /*
@@ -219,66 +217,67 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits) {
 }
 
 int spiBurst() {
-    uint8_t regAddr = 0x0C;
-    int err = 0;
+  uint8_t regAddr = 0x0C;
+  int err = 0;
 
-    regRead(0x00); // Read and clear status
-    regRead(0x0A);
-    uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
-    regRead(0x0B);
-    fifoCount += gReadBuf[2];
+  regRead(0x00); // Read and clear status
+  regRead(0x0A);
+  uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
+  regRead(0x0B);
+  fifoCount += gReadBuf[2];
 
-    uint8_t tx_buf[fifoCount];
-    uint8_t rx_buf[fifoCount];
-    memset(tx_buf, 0, fifoCount);
-    memset(rx_buf, 0, fifoCount);
+  uint8_t tx_buf[fifoCount];
+  uint8_t rx_buf[fifoCount];
+  memset(tx_buf, 0, fifoCount);
+  memset(rx_buf, 0, fifoCount);
 
-    tx_buf[0] = regAddr;
-    tx_buf[1] = 0x80;
+  tx_buf[0] = regAddr;
+  tx_buf[1] = 0x80;
 
-    req.spi = SPI;
-    req.txData = tx_buf;
-    req.rxData = rx_buf;
-    req.txLen = fifoCount;
-    req.rxLen = fifoCount;
-    req.ssIdx = 0;
-    req.ssDeassert = 1;
-    req.txCnt = 0;
-    req.rxCnt = 0;
-    req.completeCB = NULL;
+  req.spi = SPI;
+  req.txData = tx_buf;
+  req.rxData = rx_buf;
+  req.txLen = fifoCount;
+  req.rxLen = fifoCount;
+  req.ssIdx = 0;
+  req.ssDeassert = 1;
+  req.txCnt = 0;
+  req.rxCnt = 0;
+  req.completeCB = NULL;
 
-    err = MXC_SPI_MasterTransaction(&req);
-    if (err != E_NO_ERROR) {
-        printf("\nSPI TRANSACTION FAIL: %d\n", err);
-        return err;
-    }
-
-    // Define these here
-    uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
-    int sample_index = 0;
-
-    for (int i = 0; i < fifoCount; i++) {
-        if (rx_buf[i] != 0) {
-            gHold[0] = rx_buf[i];
-            gHold[1] = rx_buf[i + 1];
-            gHold[2] = rx_buf[i + 2];
-            i += 3;
-
-            while (i < fifoCount && rx_buf[i] == 0)
-                i++;
-
-            if (i + 2 < fifoCount) {
-                gHold[3] = rx_buf[i];
-                gHold[4] = rx_buf[i + 1];
-                gHold[5] = rx_buf[i + 2];
-                i += 2;
-
-                uint32_t this_sample_ts = burst_timestamp - (sample_interval_us * sample_index++);
-            
-                calcBioZ(gHold, this_sample_ts);
-            }
-        }
-    }
-
+  err = MXC_SPI_MasterTransaction(&req);
+  if (err != E_NO_ERROR) {
+    printf("\nSPI TRANSACTION FAIL: %d\n", err);
     return err;
+  }
+
+  // Define these here
+  uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
+  int sample_index = 0;
+
+  for (int i = 0; i < fifoCount; i++) {
+    if (rx_buf[i] != 0) {
+      gHold[0] = rx_buf[i];
+      gHold[1] = rx_buf[i + 1];
+      gHold[2] = rx_buf[i + 2];
+      i += 3;
+
+      while (i < fifoCount && rx_buf[i] == 0)
+        i++;
+
+      if (i + 2 < fifoCount) {
+        gHold[3] = rx_buf[i];
+        gHold[4] = rx_buf[i + 1];
+        gHold[5] = rx_buf[i + 2];
+        i += 2;
+
+        uint32_t this_sample_ts =
+            burst_timestamp - (sample_interval_us * sample_index++);
+
+        calcBioZ(gHold, this_sample_ts);
+      }
+    }
+  }
+
+  return err;
 }

@@ -27,8 +27,8 @@ uint8_t adcQData[10];
 extern uint8_t IMag;
 extern int count;
 extern int errCnt;
-//sample interval
-uint32_t sample_interval_us = 0;  // make accessible from main if needed
+// sample interval
+uint32_t sample_interval_us = 0; // make accessible from main if needed
 // uint32_t sr_bioz ;
 void GSRsettings() {
   /*
@@ -113,56 +113,50 @@ void SFBIAsettings() {
   regWrite(0x58, 0x07);
   regWrite(0x80, 0xA0);
   regWrite(0x81, 0x00);
-  changeReg(0x17, 1, 5, 1);       // NDIV = 1 (1024)
-changeReg(0x20, 6, 4, 3);       // ADC_OSR index 6 → 512
-setMdiv(586);                   // MDIV = 586
-
+  changeReg(0x17, 1, 5, 1); // NDIV = 1 (1024)
+  changeReg(0x20, 6, 4, 3); // ADC_OSR index 6 → 512
+  setMdiv(586);             // MDIV = 586
 }
-
 
 uint32_t getRefClkHz() {
 
-    uint8_t ref_clk_sel = regRead(0x1A) & 0b01000000;      // Bit 6
-    uint8_t clk_freq_sel = regRead(0x1A) & 0b00100000;     // Bit 5
+  uint8_t ref_clk_sel = regRead(0x1A) & 0b01000000;  // Bit 6
+  uint8_t clk_freq_sel = regRead(0x1A) & 0b00100000; // Bit 5
   // printf("ref_clk_sel: %d\t", ref_clk_sel);
   // printf("clk_freq_sel: %d\n", clk_freq_sel);
-    if (ref_clk_sel == 0) {
-        // Internal oscillator
-        return (clk_freq_sel == 0) ? 32000 : 32768;
-    } else {
-        // External oscillator
-        return (clk_freq_sel == 0) ? 32000 : 32768;
-    }
+  if (ref_clk_sel == 0) {
+    // Internal oscillator
+    return (clk_freq_sel == 0) ? 32000 : 32768;
+  } else {
+    // External oscillator
+    return (clk_freq_sel == 0) ? 32000 : 32768;
+  }
 }
 double sr_bioz;
 
 double getSampleIntervalUS() {
-    uint32_t ref_clk = getRefClkHz();
+  uint32_t ref_clk = getRefClkHz();
 
-    uint8_t mdiv_high = (regRead(0x17) >> 6) & 0x03;
-    uint8_t mdiv_low = regRead(0x18);
-    uint16_t mdiv = (mdiv_high << 8) | mdiv_low;
+  uint8_t mdiv_high = (regRead(0x17) >> 6) & 0x03;
+  uint8_t mdiv_low = regRead(0x18);
+  uint16_t mdiv = (mdiv_high << 8) | mdiv_low;
 
-    double pll_clk = (double)ref_clk * (mdiv + 1);
+  double pll_clk = (double)ref_clk * (mdiv + 1);
 
-    uint8_t ndiv_raw = (regRead(0x17) >> 5) & 0x01;
-    double ndiv = (ndiv_raw == 0) ? 512.0 : 1024.0;
+  uint8_t ndiv_raw = (regRead(0x17) >> 5) & 0x01;
+  double ndiv = (ndiv_raw == 0) ? 512.0 : 1024.0;
 
-    uint8_t adc_osr_raw = (regRead(0x20) >> 2) & 0x07;
-    uint16_t adc_osr_table[] = {8, 16, 32, 64, 128, 256, 512, 1024};
-    double bioz_adc_osr = adc_osr_table[adc_osr_raw];
+  uint8_t adc_osr_raw = (regRead(0x20) >> 2) & 0x07;
+  uint16_t adc_osr_table[] = {8, 16, 32, 64, 128, 256, 512, 1024};
+  double bioz_adc_osr = adc_osr_table[adc_osr_raw];
 
-    sr_bioz = pll_clk / (ndiv * bioz_adc_osr);
-    printf("SR: %.4f\n", sr_bioz);  // Prints with more decimal places
+  sr_bioz = pll_clk / (ndiv * bioz_adc_osr);
+  // printf("SR: %.4f\n", sr_bioz);  // Prints with more decimal places
 
-    if (sr_bioz == 0.0) return 0.0;
-    return 1000000.0 / sr_bioz;
+  if (sr_bioz == 0.0)
+    return 0.0;
+  return 1000000.0 / sr_bioz;
 }
-
-
-  
-
-
 
 int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
   /*
@@ -276,19 +270,20 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
 
   // Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
 
-  uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-  // printf("%lu\t", (timestamp_us - start_time_ms) / 1000000);  // seconds since start
-  // printf("%lu\t", (timestamp_us - start_time_ms) / 1000);  // in milliseconds
-  // printf("%f\n", sr_bioz);  // sample number
-  // printf("%f\t", Q);
-  // // printf("overflow: %d\n", regRead(0x0A) & 0x80);
-  // printf("%f\n", I);
+  // uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
+  printf("%lu\t", (timestamp_us - start_time_ms));
+  // printf("%lu\t", (timestamp_us - start_time_ms) / 1000);
+  // printf("%f\n", sr_bioz); // sample number
+  printf("%f\t", Q);
+  // printf("overflow: %lu\n", regRead(0x0A) & 0x80);
+  printf("%f\n", I);
   // printf("%f\t", Z);
   // printf("%f\n", Zbody);
 
   // SD card upload
   char log_entry[128]; // Increased size to accommodate the formatted string
-  int log_len = snprintf(log_entry, sizeof(log_entry), " %f %f  \n", Q, I);
+  int log_len = snprintf(log_entry, sizeof(log_entry), " %lu %f %f  \n",
+                         (timestamp_us - start_time_ms), Q, I);
 
   if (log_len < 0 || log_len >= sizeof(log_entry)) {
     printf("Error formatting log entry.\n");

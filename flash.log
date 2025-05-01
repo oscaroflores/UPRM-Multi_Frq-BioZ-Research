@@ -17,7 +17,6 @@ Warn : Prefer GDB command "target extended-remote :pipe" instead of "target remo
 Warn : No RTOS could be auto-detected!
 [max32xxx.cpu] halted due to debug-request, current mode: Thread 
 xPSR: 0x01000000 pc: 0x000001b4 msp: 0x2000c000
-Info : Padding image section 0 at 0x100250a8 with 8 bytes
 [max32xxx.cpu] halted due to debug-request, current mode: Thread 
 xPSR: 0x01000000 pc: 0x000001b4 msp: 0x2000c000
 Info : dropped 'gdb' connection

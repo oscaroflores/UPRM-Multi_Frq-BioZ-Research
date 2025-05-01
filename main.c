@@ -57,15 +57,14 @@ void buttonISR(void *unused) {
   // 1. Clear the GPIO interrupt flag
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_2);
 
-  if(regRead(0x20)==0x00){
-    regWrite(0x20,0xBF);
-  }
-  else{
-    regWrite(0x20,0x00);
+  if (regRead(0x20) == 0x00) {
+    regWrite(0x20, 0xBF);
+  } else {
+    regWrite(0x20, 0x00);
   }
 }
-void setupButtonInterrupt(){
-    mxc_gpio_cfg_t intaPin = {
+void setupButtonInterrupt() {
+  mxc_gpio_cfg_t intaPin = {
       .port = MXC_GPIO0,
       .mask = MXC_GPIO_PIN_2,
       .func = MXC_GPIO_FUNC_IN,
@@ -86,7 +85,7 @@ void sensorISR(void *unused) {
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_25);
 
   // 2. Call your main AFE interrupt handler
-  
+
   spiBurst();
 }
 void setupMax30009Interrupt(void) {

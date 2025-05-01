@@ -155,7 +155,7 @@ int handle_start(int argc, char *argv[]) {
     return E_INVALID;
   }
   regWrite(0x20, 0xBF);
-  printf("Started recording.\n");
+  // printf("Started recording.\n");
   return E_NO_ERROR;
 }
 
@@ -165,6 +165,6 @@ int handle_stop(int argc, char *argv[]) {
     return E_INVALID;
   }
   regWrite(0x20, 0x00);
-  printf("Stopped recording.\n");
+  // printf("Stopped recording.\n");
   return E_NO_ERROR;
 }
