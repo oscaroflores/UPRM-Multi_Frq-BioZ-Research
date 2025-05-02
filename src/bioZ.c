@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-uint32_t start_time_ms;
+uint64_t start_time_ms;
 
 extern uint8_t gReadBuf[100];
 uint8_t adcIData[10];
@@ -158,7 +158,7 @@ double getSampleIntervalUS() {
   return 1000000.0 / sr_bioz;
 }
 
-int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
+int calcBioZ(uint8_t buf[], uint64_t timestamp_us) {
   /*
   This function uses the readings from the FIFO register
 
@@ -271,7 +271,7 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
   // Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
 
   // uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-  printf("%lu\t", (timestamp_us - start_time_ms));
+  printf("%llu\t", (timestamp_us - start_time_ms));
   // printf("%lu\t", (timestamp_us - start_time_ms) / 1000);
   // printf("%f\n", sr_bioz); // sample number
   printf("%f\t", Q);
@@ -282,7 +282,7 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
 
   // SD card upload
   char log_entry[128]; // Increased size to accommodate the formatted string
-  int log_len = snprintf(log_entry, sizeof(log_entry), " %lu %f %f  \n",
+  int log_len = snprintf(log_entry, sizeof(log_entry), " %llu %f %f  \n",
                          (timestamp_us - start_time_ms), Q, I);
 
   if (log_len < 0 || log_len >= sizeof(log_entry)) {

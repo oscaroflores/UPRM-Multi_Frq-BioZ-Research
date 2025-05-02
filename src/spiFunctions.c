@@ -28,6 +28,7 @@ extern bool isRecording; // Global variable to track recording state
 #define FTHR_Defined 1
 
 extern uint8_t gReadBuf[100];
+extern volatile uint64_t extended_timestamp_us;
 extern uint8_t gHold[100];
 mxc_spi_pins_t spi_pins;
 mxc_spi_req_t req;
@@ -252,7 +253,7 @@ int spiBurst() {
   }
 
   // Define these here
-  uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
+  uint64_t burst_timestamp = extended_timestamp_us | MXC_TMR_GetCount(MXC_TMR0);
   int sample_index = 0;
 
   for (int i = 0; i < fifoCount; i++) {

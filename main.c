@@ -51,6 +51,7 @@ uint8_t gHold[100];
 int errCnt;
 extern int count;
 volatile bool fifoNeedsService = false; // Global
+volatile uint64_t extended_timestamp_us = 0; 
 extern uint32_t sample_interval_us;
 volatile bool buttonPressed = false; // Global flag
 void buttonISR(void *unused) {
@@ -61,6 +62,12 @@ void buttonISR(void *unused) {
     regWrite(0x20, 0xBF);
   } else {
     regWrite(0x20, 0x00);
+  }
+}
+void TMR0_IRQHandler(void) {
+  if (MXC_TMR_GetFlags(MXC_TMR0) & MXC_F_TMR_INTFL_IRQ_B) {
+    extended_timestamp_us += ((uint64_t)1<<32);
+    MXC_TMR_ClearFlags(MXC_TMR0);
   }
 }
 void setupButtonInterrupt() {
@@ -88,6 +95,7 @@ void sensorISR(void *unused) {
 
   spiBurst();
 }
+
 void setupMax30009Interrupt(void) {
   mxc_gpio_cfg_t intbPin = {
       .port = MXC_GPIO0,
@@ -141,6 +149,8 @@ int main(void) {
 
   MXC_TMR_Init(MXC_TMR0, &tmr_cfg, false);
   MXC_TMR_Start(MXC_TMR0);
+  NVIC_EnableIRQ(TMR0_IRQn);
+  MXC_TMR_EnableInt(MXC_TMR0);
   sample_interval_us = getSampleIntervalUS();
 
   // Main loop
