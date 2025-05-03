@@ -538,7 +538,7 @@ void waitCardInserted()
     cardDetect.vssel = MXC_GPIO_VSSEL_VDDIOH;
 
     MXC_GPIO_Config(&cardDetect);
-
+ 
     // Exit function if card is already inserted
     if (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) == 0) {
         return;

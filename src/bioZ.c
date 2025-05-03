@@ -134,7 +134,7 @@ uint32_t getRefClkHz() {
 }
 double sr_bioz;
 
-double getSampleIntervalUS() {
+double getSampleInterval() {
   uint32_t ref_clk = getRefClkHz();
 
   uint8_t mdiv_high = (regRead(0x17) >> 6) & 0x03;
@@ -155,14 +155,17 @@ double getSampleIntervalUS() {
 
   if (sr_bioz == 0.0)
     return 0.0;
-  return 1000000.0 / sr_bioz;
+  return 1 / sr_bioz;
 }
 
-int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
+
+
+int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused) {
   /*
   This function uses the readings from the FIFO register
-
   */
+
+  static uint32_t sample_index = 0; // persists across calls
 
   uint8_t x1[3], x2[3];
   int i, err = 0;
@@ -187,9 +190,7 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
     adcQData[1] = x2[1];
     adcQData[2] = x2[2];
 
-  }
-
-  else if ((a == 0x20) && (b == (0x10))) {
+  } else if ((a == 0x20) && (b == (0x10))) {
     adcIData[0] = (x2[0] & 0x0F);
     adcIData[1] = x2[1];
     adcIData[2] = x2[2];
@@ -198,97 +199,64 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us) {
     adcQData[1] = x1[1];
     adcQData[2] = x1[2];
 
-  }
-
-  else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
-           x1[2] == 0xFF && x2[2] == 0xFF) {
+  } else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
+             x1[2] == 0xFF && x2[2] == 0xFF) {
     printf("Invalid Data\n");
     return 1;
-  }
-
-  else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
-           x1[2] == 0xFE && x2[2] == 0xFF) {
+  } else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
+             x1[2] == 0xFE && x2[2] == 0xFF) {
     printf("Marker\n");
     return 2;
-  }
-
-  else {
-
+  } else {
     errCnt++;
     return 3;
   }
+
   double I, Q, temp;
   uint32_t L, d;
-  /*
-  Convert to one Hex value
-  */
+
   uint32_t adcI = adcIData[2] + (adcIData[1] << 8) + (adcIData[0] << 16);
   uint32_t adcQ = adcQData[2] + (adcQData[1] << 8) + (adcQData[0] << 16);
 
-  /*
-  Convert from 2's complement to decimal
-  */
   if (adcI >> 19 == 1) {
-
     L = (adcI & 0x7FFFF);
     d = 0x80000;
-
     I = L;
     temp = d;
     I = I - temp;
-
     adcI = adcI >> 1;
-
-  } else
+  } else {
     I = adcI;
+  }
 
-  if (adcQ >> 19 == 1) {
-
-    L = (adcQ & 0x7FFFF);
-    d = 0x80000;
-
-    Q = L;
-    temp = d;
-    Q = Q - temp;
-
-    adcQ = adcQ >> 1;
-
-  } else
+    if (adcQ >> 19 == 1) {
+      L = (adcQ & 0x7FFFF);
+      d = 0x80000;
+      Q = L;
+      temp = d;
+      Q = Q - temp;
+      adcQ = adcQ >> 1;
+    } else {
     Q = adcQ;
+  }
 
-  // double mag = sqrt(pow(I, 2) + pow(Q, 2));
+  // --- Timestamp using sample index and sr_bioz ---
+  uint32_t timestamp = (uint32_t)(sample_index * (1.0 / sr_bioz) * 1e6); // in microseconds
+  sample_index++;
 
-  // double current = 32E-6; // for mode 14 change to 256uA
-
-  // double p = pow(2, 19) * 1 * (2 / 3.14) * (current);
-  // double Z = mag / p;
-
-  // double Rdc, Ziso1, Ziso2, Zbody;
-  // Rdc = 10E6;
-  // Ziso1 = 5429 / 2;
-  // Ziso2 = 5429 / 2;
-
-  // Zbody = 1 / ((1 / Z) - (1 / Rdc)) - (Ziso1 + Ziso2);
-
-  // uint32_t ticks = MXC_TMR_GetCount(MXC_TMR0) - start_time_ms;
-  printf("%lu\t", (timestamp_us - start_time_ms));
-  // printf("%lu\t", (timestamp_us - start_time_ms) / 1000);
-  // printf("%f\n", sr_bioz); // sample number
+  printf("%lu\t", timestamp);
   printf("%f\t", Q);
-  // printf("overflow: %lu\n", regRead(0x0A) & 0x80);
   printf("%f\n", I);
-  // printf("%f\t", Z);
-  // printf("%f\n", Zbody);
 
   // SD card upload
-  char log_entry[128]; // Increased size to accommodate the formatted string
-  int log_len = snprintf(log_entry, sizeof(log_entry), " %lu %f %f  \n",
-                         (timestamp_us - start_time_ms), Q, I);
+  char log_entry[128];
+  int log_len = snprintf(log_entry, sizeof(log_entry), " %lu %f %f  \n", timestamp, Q, I);
 
   if (log_len < 0 || log_len >= sizeof(log_entry)) {
     printf("Error formatting log entry.\n");
-    return -1; // Return an error if snprintf s
+    return -1;
   }
+
   setMessage(log_entry);
   appendFile(new_log_file, log_len);
 

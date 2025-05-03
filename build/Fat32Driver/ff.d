@@ -1,43 +1,40 @@
-/home/ricardo/MaximSDK/MyProjects/UPRM-Multi_Frq-BioZ-Research/build/Fat32Driver/ff.o: \
- source/ff.c \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/string.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/newlib.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/config.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/ieeefp.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/reent.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_types.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_types.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/lock.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/cdefs.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_locale.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/strings.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/string.h \
- source/ff.h \
- /home/ricardo/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
- /home/ricardo/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
- source/diskio.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/max32655.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Include/core_cm4.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Include/core_cmInstr.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Include/core_cmFunc.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Include/core_cm4_simd.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/system_max32655.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_errors.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h \
- /home/ricardo/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
- /home/ricardo/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h
+C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/Fat32Driver/ff.o: \
+ source/ff.c C:/ArmGCC/arm-none-eabi/include/string.h \
+ C:/ArmGCC/arm-none-eabi/include/_ansi.h \
+ C:/ArmGCC/arm-none-eabi/include/newlib.h \
+ C:/ArmGCC/arm-none-eabi/include/_newlib_version.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/config.h \
+ C:/ArmGCC/arm-none-eabi/include/machine/ieeefp.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/features.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/reent.h \
+ C:/ArmGCC/arm-none-eabi/include/_ansi.h \
+ C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stddef.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/cdefs.h \
+ C:/ArmGCC/arm-none-eabi/include/machine/_default_types.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/_types.h \
+ C:/ArmGCC/arm-none-eabi/include/machine/_types.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/lock.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/_locale.h \
+ C:/ArmGCC/arm-none-eabi/include/strings.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/string.h source/ff.h \
+ C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
+ C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stdint.h \
+ C:/ArmGCC/arm-none-eabi/include/stdint.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/_intsup.h \
+ C:/ArmGCC/arm-none-eabi/include/sys/_stdint.h source/diskio.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/max32655.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmInstr.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmFunc.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4_simd.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/system_max32655.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_errors.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h

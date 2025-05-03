@@ -1,5 +1,5 @@
 {    
-    // "MAXIM_PATH": "C:/MaximSDK",
+    "MAXIM_PATH": "C:/MaximSDK",
     "terminal.integrated.env.windows": {
         "Path":"${config:OCD_path};${config:ARM_GCC_path}/bin;${config:xPack_GCC_path}/bin;${config:Make_path};${env:PATH}",
         "MAXIM_PATH":"${config:MAXIM_PATH}"
@@ -94,6 +94,9 @@
         "mxc_pins.h": "c",
         "max30009.h": "c",
         "nvic_table.h": "c",
-        "tmr.h": "c"
+        "tmr.h": "c",
+        "ff.h": "c",
+        "lfs.h": "c",
+        "cli.h": "c"
     }
 }

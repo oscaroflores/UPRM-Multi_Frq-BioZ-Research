@@ -7,11 +7,6 @@ The current setup set out good frequencies for GSR, but there are functions to
 easily change the settings to measure at different rates or to measure different
 vital signs depending on necessities
 
-
-
-
-
-
 */
 #include "tmr.h"
 
@@ -88,6 +83,7 @@ void sensorISR(void *unused) {
 
   spiBurst();
 }
+
 void setupMax30009Interrupt(void) {
   mxc_gpio_cfg_t intbPin = {
       .port = MXC_GPIO0,
@@ -141,11 +137,10 @@ int main(void) {
 
   MXC_TMR_Init(MXC_TMR0, &tmr_cfg, false);
   MXC_TMR_Start(MXC_TMR0);
-  sample_interval_us = getSampleIntervalUS();
+  sample_interval_us = getSampleInterval();
 
   // Main loop
   while (1) {
-
     regRead(0x00);
   }
 
