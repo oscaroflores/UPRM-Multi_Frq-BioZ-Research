@@ -1,6 +1,5 @@
 C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/cli.o: \
- C:/MaximSDK/Libraries/CLI/src/cli.c \
- C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stddef.h \
+ src/cli.c C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stddef.h \
  C:/ArmGCC/arm-none-eabi/include/stdio.h \
  C:/ArmGCC/arm-none-eabi/include/_ansi.h \
  C:/ArmGCC/arm-none-eabi/include/newlib.h \
@@ -31,8 +30,7 @@ C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/cli.o: \
  C:/MaximSDK/Libraries/MiscDrivers/LED/led.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
- C:/MaximSDK/Libraries/MiscDrivers/PushButton/pb.h \
- C:/MaximSDK/Libraries/CLI/inc/cli.h \
+ C:/MaximSDK/Libraries/MiscDrivers/PushButton/pb.h include/cli.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
  C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stdbool.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \

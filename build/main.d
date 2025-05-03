@@ -45,8 +45,7 @@ C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
  C:/MaximSDK/Libraries/MiscDrivers/LED/led.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
- C:/MaximSDK/Libraries/MiscDrivers/PushButton/pb.h \
- C:/MaximSDK/Libraries/CLI/inc/cli.h \
+ C:/MaximSDK/Libraries/MiscDrivers/PushButton/pb.h include/cli.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/dma.h \

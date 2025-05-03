@@ -241,12 +241,14 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused) {
   }
 
   // --- Timestamp using sample index and sr_bioz ---
-  uint32_t timestamp = (uint32_t)(sample_index * (1.0 / sr_bioz) * 1e6); // in microseconds
-  sample_index++;
+  uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3 * 2)); // in miliseconds
+  sample_index++; // Increment sample index for next sample timestamp
 
+  // -- Print the results --
   printf("%lu\t", timestamp);
   printf("%f\t", Q);
   printf("%f\n", I);
+
 
   // SD card upload
   char log_entry[128];

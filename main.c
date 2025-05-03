@@ -45,6 +45,7 @@ uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
 extern int count;
+extern double sr_bioz;
 volatile bool fifoNeedsService = false; // Global
 extern uint32_t sample_interval_us;
 volatile bool buttonPressed = false; // Global flag
@@ -123,6 +124,7 @@ int main(void) {
   SFBIAsettings(); // Set up correct sensor registers for SFBIA
   setupButtonInterrupt(NULL);
   setupMax30009Interrupt(); // <<< YOU ADD THIS FUNCTION CALL <<<
+  
 
   // <<< NEW: Setup GPIO interrupt for P0_25 here >>>
 
