@@ -46,6 +46,7 @@ const command_t user_commands[] = {
     {"stop", "stop", "Stop recording", handle_stop},
 };
 
+extern int sample_index; // Declare sample_index as extern to access it in other files
 const unsigned int num_user_commands =
     sizeof(user_commands) / sizeof(command_t);
 
@@ -165,6 +166,7 @@ int handle_stop(int argc, char *argv[]) {
     return E_INVALID;
   }
   regWrite(0x20, 0x00);
+  sample_index = 0; // Reset sample index when stopping recording
   // printf("Stopped recording.\n");
   return E_NO_ERROR;
 }

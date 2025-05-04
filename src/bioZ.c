@@ -29,6 +29,7 @@ extern int count;
 extern int errCnt;
 // sample interval
 uint32_t sample_interval_us = 0; // make accessible from main if needed
+uint32_t sample_index = 0; // Declare as global variable
 // uint32_t sr_bioz ;
 void GSRsettings() {
   /*
@@ -165,8 +166,7 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused) {
   This function uses the readings from the FIFO register
   */
 
-  static uint32_t sample_index = 0; // persists across calls
-
+  // sample_index persists as a global variable
   uint8_t x1[3], x2[3];
   int i, err = 0;
 

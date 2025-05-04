@@ -48,6 +48,7 @@ extern int count;
 extern double sr_bioz;
 volatile bool fifoNeedsService = false; // Global
 extern uint32_t sample_interval_us;
+extern sample_index;
 volatile bool buttonPressed = false; // Global flag
 void buttonISR(void *unused) {
   // 1. Clear the GPIO interrupt flag
@@ -57,6 +58,7 @@ void buttonISR(void *unused) {
     regWrite(0x20, 0xBF);
   } else {
     regWrite(0x20, 0x00);
+    sample_index = 0;
   }
 }
 void setupButtonInterrupt() {
