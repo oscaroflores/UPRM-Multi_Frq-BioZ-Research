@@ -56,5 +56,4 @@ The values for I-Phase, Q-Phase, BIOZ and adjusted BIOZ are printed to a file th
 ### Hardware needed
  - Connect the MAX32655FTHR to the MAX30009EVKIT via SPI lines
  - Connect jumpers J5 and J7, leaving J4, J6, J7 and J8 open
- - Replace the capacitors C5, C6, C7 and C8 with capacitors of at least 220nF
- - Use two wet or dry electrodes on the wrist, connected 4cm apart
+ - Use four wet or dry electrodes on the torso. DRVN and DRVP 4-5cm underneath the armpit and the BIP and BIN in front of respective DRV electrode. 
