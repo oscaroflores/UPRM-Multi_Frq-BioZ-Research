@@ -1,4 +1,5 @@
 {    
+    "MAXIM_PATH": "C:/MaximSDK",
     "terminal.integrated.env.windows": {
         "Path":"${config:OCD_path};${config:ARM_GCC_path}/bin;${config:xPack_GCC_path}/bin;${config:Make_path};${env:PATH}",
         "MAXIM_PATH":"${config:MAXIM_PATH}"
@@ -17,7 +18,7 @@
     "target":"MAX32655",
     "board":"FTHR_Apps_P1",
 
-    "project_name":"${workspaceFolderBasename}",
+    "project_name":"UPRM-Multi_Frq-BioZ-Research",
 
     "program_file":"${config:project_name}.elf",
     "symbol_file":"${config:program_file}",
@@ -83,11 +84,19 @@
         "gpio.h": "c",
         "mxc_sys.h": "c",
         "mxc_errors.h": "c",
+        "spifunctions.h": "c",
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "user-cli.h": "c",
+        "sdhc.h": "c",
+        "stdbool.h": "c",
         "string.h": "c",
         "mxc_pins.h": "c",
         "max30009.h": "c",
-        "stdint.h": "c",
         "nvic_table.h": "c",
-        "stdio.h": "c"
+        "tmr.h": "c",
+        "ff.h": "c",
+        "lfs.h": "c",
+        "cli.h": "c"
     }
 }
