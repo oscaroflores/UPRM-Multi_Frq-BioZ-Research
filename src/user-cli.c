@@ -50,8 +50,10 @@ extern int sample_index; // Declare sample_index as extern to access it in other
 const unsigned int num_user_commands =
     sizeof(user_commands) / sizeof(command_t);
 
-int handle_size(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_size(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. Too many parameters.\n");
     return E_INVALID;
   }
@@ -59,8 +61,10 @@ int handle_size(int argc, char *argv[]) {
   return getSize();
 }
 
-int handle_format(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_format(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. Too many parameters.\n");
     return E_INVALID;
   }
@@ -68,8 +72,10 @@ int handle_format(int argc, char *argv[]) {
   return formatSDHC();
 }
 
-int handle_mount(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_mount(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. Too many parameters.\n");
     return E_INVALID;
   }
@@ -77,8 +83,10 @@ int handle_mount(int argc, char *argv[]) {
   return mount();
 }
 
-int handle_ls(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_ls(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. Too many parameters.\n");
     return E_INVALID;
   }
@@ -86,8 +94,10 @@ int handle_ls(int argc, char *argv[]) {
   return ls();
 }
 
-int handle_mkdir(int argc, char *argv[]) {
-  if (argc != 2) {
+int handle_mkdir(int argc, char *argv[])
+{
+  if (argc != 2)
+  {
     printf("Incorrect usage. Please provide directory name.\n");
     return E_INVALID;
   }
@@ -95,8 +105,10 @@ int handle_mkdir(int argc, char *argv[]) {
   return mkdir(argv[1]);
 }
 
-int handle_createfile(int argc, char *argv[]) {
-  if (argc != 3) {
+int handle_createfile(int argc, char *argv[])
+{
+  if (argc != 3)
+  {
     printf("Incorrect usage. Please provide filename and length.\n");
     return E_INVALID;
   }
@@ -105,8 +117,10 @@ int handle_createfile(int argc, char *argv[]) {
   return createFile(argv[1], length);
 }
 
-int handle_cd(int argc, char *argv[]) {
-  if (argc != 2) {
+int handle_cd(int argc, char *argv[])
+{
+  if (argc != 2)
+  {
     printf("Incorrect usage. Please provide directory name.\n");
     return E_INVALID;
   }
@@ -114,8 +128,10 @@ int handle_cd(int argc, char *argv[]) {
   return cd(argv[1]);
 }
 
-int handle_add_data(int argc, char *argv[]) {
-  if (argc != 3) {
+int handle_add_data(int argc, char *argv[])
+{
+  if (argc != 3)
+  {
     printf("Incorrect usage. Please provide filename and length.\n");
     return E_INVALID;
   }
@@ -124,8 +140,10 @@ int handle_add_data(int argc, char *argv[]) {
   return appendFile(argv[1], length);
 }
 
-int handle_del(int argc, char *argv[]) {
-  if (argc != 2) {
+int handle_del(int argc, char *argv[])
+{
+  if (argc != 2)
+  {
     printf("Incorrect usage. Please provide filename.\n");
     return E_INVALID;
   }
@@ -133,8 +151,10 @@ int handle_del(int argc, char *argv[]) {
   return deleteFile(argv[1]);
 }
 
-int handle_fatfs(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_fatfs(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. Too many parameters.\n");
     return E_INVALID;
   }
@@ -142,31 +162,44 @@ int handle_fatfs(int argc, char *argv[]) {
   return example();
 }
 
-int handle_unmount(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_unmount(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. Too many parameters.\n");
     return E_INVALID;
   }
 
   return umount();
 }
-int handle_start(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_start(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. No parameters needed.\n");
     return E_INVALID;
   }
-  regWrite(0x20, 0xBF);
-  // printf("Started recording.\n");
+
+  // createNextBiozLogFile();
+
+  // Set bits [2:0] = 111 (enable)
+  changeReg(0x20, 0x7, 2, 3);
+
+  sample_index = 0;
+
   return E_NO_ERROR;
 }
 
-int handle_stop(int argc, char *argv[]) {
-  if (argc != 1) {
+int handle_stop(int argc, char *argv[])
+{
+  if (argc != 1)
+  {
     printf("Incorrect usage. No parameters needed.\n");
     return E_INVALID;
   }
-  regWrite(0x20, 0x00);
-  sample_index = 0; // Reset sample index when stopping recording
-  // printf("Stopped recording.\n");
+
+  // Set bits [2:0] = 000 (disable)
+  changeReg(0x20, 0x0, 2, 3);
+
   return E_NO_ERROR;
 }

@@ -22,12 +22,12 @@
 #include "sdhc.h"
 
 /***** Globals *****/
-FATFS *fs; //FFat Filesystem Object
+FATFS *fs; // FFat Filesystem Object
 FATFS fs_obj;
-FIL file; //FFat File Object
-FRESULT err; //FFat Result (Struct)
-FILINFO fno; //FFat File Information Object
-DIR dir; //FFat Directory Object
+FIL file;    // FFat File Object
+FRESULT err; // FFat Result (Struct)
+FILINFO fno; // FFat File Information Object
+DIR dir;     // FFat Directory Object
 TCHAR *FF_ERRORS[20];
 BYTE work[4096];
 
@@ -37,15 +37,16 @@ UINT bytes_written = 0, bytes_read = 0, mounted = 0;
 static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
 TCHAR message[MAXLEN], directory[MAXLEN], cwd[MAXLEN], filename[MAXLEN], volume_label[24],
     volume = '0';
-mxc_gpio_cfg_t SDPowerEnablePin = { MXC_GPIO1, MXC_GPIO_PIN_12, MXC_GPIO_FUNC_OUT,
-                                    MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO };
+mxc_gpio_cfg_t SDPowerEnablePin = {MXC_GPIO1, MXC_GPIO_PIN_12, MXC_GPIO_FUNC_OUT,
+                                   MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO};
 char new_log_file[64];
 
 // /***** FUNCTIONS *****/
 
 void generateMessage(unsigned length)
 {
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < length; i++)
+    {
         /*Generate some random data to put in file*/
         message[i] = charset[rand() % (sizeof(charset) - 1)];
     }
@@ -61,24 +62,30 @@ int mount()
 {
     fs = &fs_obj;
 
-    if ((err = f_mount(fs, "", 1)) != FR_OK) { //Mount the default drive to fs now
+    if ((err = f_mount(fs, "", 1)) != FR_OK)
+    { // Mount the default drive to fs now
         printf("Error opening SD card: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
-    } else {
+    }
+    else
+    {
         printf("SD card mounted.\n");
         mounted = 1;
     }
 
-    f_getcwd(cwd, sizeof(cwd)); //Set the Current working directory
+    f_getcwd(cwd, sizeof(cwd)); // Set the Current working directory
 
     return err;
 }
 
 int umount()
 {
-    if ((err = f_mount(NULL, "", 0)) != FR_OK) { //Unmount the default drive from its mount point
+    if ((err = f_mount(NULL, "", 0)) != FR_OK)
+    { // Unmount the default drive from its mount point
         printf("Error unmounting volume: %s\n", FF_ERRORS[err]);
-    } else {
+    }
+    else
+    {
         printf("SD card unmounted.\n");
         mounted = 0;
     }
@@ -93,23 +100,28 @@ int formatSDHC()
     MXC_UART_ClearRXFIFO(MXC_UART0);
     MXC_Delay(MSEC(5000));
 
-    if (MXC_UART_GetRXFIFOAvailable(MXC_UART0) > 0) {
+    if (MXC_UART_GetRXFIFOAvailable(MXC_UART0) > 0)
+    {
         return E_ABORT;
     }
 
     printf("FORMATTING DRIVE\n");
 
-    MKFS_PARM format_options = { .fmt = FM_ANY };
+    MKFS_PARM format_options = {.fmt = FM_ANY};
 
-    if ((err = f_mkfs("", &format_options, work, sizeof(work))) != FR_OK) {
+    if ((err = f_mkfs("", &format_options, work, sizeof(work))) != FR_OK)
+    {
         printf("Error formatting SD card: %s\n", FF_ERRORS[err]);
-    } else {
+    }
+    else
+    {
         printf("Drive formatted.\n");
     }
 
     mount();
 
-    if ((err = f_setlabel("MAXIM")) != FR_OK) {
+    if ((err = f_setlabel("MAXIM")) != FR_OK)
+    {
         printf("Error setting drive label: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
     }
@@ -121,11 +133,13 @@ int formatSDHC()
 
 int getSize()
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
-    if ((err = f_getfree(&volume, &clusters_free, &fs)) != FR_OK) {
+    if ((err = f_getfree(&volume, &clusters_free, &fs)) != FR_OK)
+    {
         printf("Error finding free size of card: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
     }
@@ -141,23 +155,28 @@ int getSize()
 
 int ls()
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
     printf("Listing Contents of %s - \n", cwd);
 
-    if ((err = f_opendir(&dir, cwd)) == FR_OK) {
-        while (1) {
+    if ((err = f_opendir(&dir, cwd)) == FR_OK)
+    {
+        while (1)
+        {
             err = f_readdir(&dir, &fno);
 
-            if (err != FR_OK || fno.fname[0] == 0) {
+            if (err != FR_OK || fno.fname[0] == 0)
+            {
                 break;
             }
 
             printf("%s/%s", cwd, fno.fname);
 
-            if (fno.fattrib & AM_DIR) {
+            if (fno.fattrib & AM_DIR)
+            {
                 printf("/");
             }
 
@@ -165,7 +184,9 @@ int ls()
         }
 
         f_closedir(&dir);
-    } else {
+    }
+    else
+    {
         printf("Error opening directory!\n");
         return err;
     }
@@ -179,20 +200,23 @@ int createFile(char *file_name, unsigned int length)
 {
     // unsigned int length = 128;
 
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
     snprintf(filename, MAXLEN, "%s", file_name);
 
-    if (length > MAXLEN) {
+    if (length > MAXLEN)
+    {
         printf("Error. File size limit for this example is %d bytes.\n", MAXLEN);
         return FR_INVALID_PARAMETER;
     }
 
     printf("Creating file %s with length %d\n", filename, length);
 
-    if ((err = f_open(&file, (const TCHAR *)filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+    if ((err = f_open(&file, (const TCHAR *)filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK)
+    {
         printf("Error opening file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -202,7 +226,8 @@ int createFile(char *file_name, unsigned int length)
 
     generateMessage(length);
 
-    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK) {
+    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK)
+    {
         printf("Error writing file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -210,7 +235,8 @@ int createFile(char *file_name, unsigned int length)
 
     printf("%d bytes written to file!\n", bytes_written);
 
-    if ((err = f_close(&file)) != FR_OK) {
+    if ((err = f_close(&file)) != FR_OK)
+    {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -222,23 +248,27 @@ int createFile(char *file_name, unsigned int length)
 
 int appendFile(char *file_name, unsigned int length)
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
     snprintf(filename, MAXLEN, "%s", file_name);
 
-    if ((err = f_stat((const TCHAR *)filename, &fno)) == FR_NO_FILE) {
+    if ((err = f_stat((const TCHAR *)filename, &fno)) == FR_NO_FILE)
+    {
         printf("File %s doesn't exist!\n", (const TCHAR *)filename);
         return err;
     }
 
-    if (length > MAXLEN) {
+    if (length > MAXLEN)
+    {
         printf("Error. Size limit for this example is %d bytes.\n", MAXLEN);
         return FR_INVALID_PARAMETER;
     }
 
-    if ((err = f_open(&file, (const TCHAR *)filename, FA_OPEN_APPEND | FA_WRITE)) != FR_OK) {
+    if ((err = f_open(&file, (const TCHAR *)filename, FA_OPEN_APPEND | FA_WRITE)) != FR_OK)
+    {
         printf("Error opening file %s\n", FF_ERRORS[err]);
         return err;
     }
@@ -247,14 +277,16 @@ int appendFile(char *file_name, unsigned int length)
 
     // generateMessage(length);
 
-    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK) {
+    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK)
+    {
         printf("Error writing file: %s\n", FF_ERRORS[err]);
         return err;
     }
 
     // printf("%d bytes written to file\n", bytes_written);
 
-    if ((err = f_close(&file)) != FR_OK) {
+    if ((err = f_close(&file)) != FR_OK)
+    {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
         return err;
     }
@@ -265,7 +297,8 @@ int appendFile(char *file_name, unsigned int length)
 
 int mkdir(char *dir_name)
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
@@ -273,18 +306,23 @@ int mkdir(char *dir_name)
 
     err = f_stat((const TCHAR *)directory, &fno);
 
-    if (err == FR_NO_FILE) {
+    if (err == FR_NO_FILE)
+    {
         printf("Creating directory...\n");
 
-        if ((err = f_mkdir((const TCHAR *)directory)) != FR_OK) {
+        if ((err = f_mkdir((const TCHAR *)directory)) != FR_OK)
+        {
             printf("Error creating directory: %s\n", FF_ERRORS[err]);
             f_mount(NULL, "", 0);
             return err;
-        } else {
+        }
+        else
+        {
             printf("Directory %s created.\n", directory);
         }
-
-    } else {
+    }
+    else
+    {
         printf("Directory already exists.\n");
     }
 
@@ -293,18 +331,21 @@ int mkdir(char *dir_name)
 
 int cd(char *dir_name)
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
     snprintf(directory, MAXLEN, "%s", dir_name);
 
-    if ((err = f_stat((const TCHAR *)directory, &fno)) == FR_NO_FILE) {
+    if ((err = f_stat((const TCHAR *)directory, &fno)) == FR_NO_FILE)
+    {
         printf("Directory doesn't exist (Did you mean mkdir?)\n");
         return err;
     }
 
-    if ((err = f_chdir((const TCHAR *)directory)) != FR_OK) {
+    if ((err = f_chdir((const TCHAR *)directory)) != FR_OK)
+    {
         printf("Error in chdir: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -318,18 +359,21 @@ int cd(char *dir_name)
 
 int deleteFile(char *file_name)
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
     snprintf(filename, MAXLEN, "%s", file_name);
 
-    if ((err = f_stat((const TCHAR *)filename, &fno)) == FR_NO_FILE) {
+    if ((err = f_stat((const TCHAR *)filename, &fno)) == FR_NO_FILE)
+    {
         printf("File or directory doesn't exist\n");
         return err;
     }
 
-    if ((err = f_unlink(filename)) != FR_OK) {
+    if ((err = f_unlink(filename)) != FR_OK)
+    {
         printf("Error deleting file\n");
         return err;
     }
@@ -340,55 +384,74 @@ int deleteFile(char *file_name)
 
 int createNextBiozLogFile()
 {
-    if (!mounted) {
+    if (!mounted)
+    {
         mount();
     }
 
     int max_n = -1; // Start with -1 to handle the case where no files are found
     char file_prefix[] = "bioz-log-";
-    char file_extension[] = ".txt";
+    char file_extension[] = ".csv"; // CHANGED from .txt to .csv
     char temp_filename[MAXLEN];
 
     // Open the current directory
-    if ((err = f_opendir(&dir, cwd)) == FR_OK) {
-        while (1) {
+    if ((err = f_opendir(&dir, cwd)) == FR_OK)
+    {
+        while (1)
+        {
             err = f_readdir(&dir, &fno);
-            if (err != FR_OK || fno.fname[0] == 0) {
+            if (err != FR_OK || fno.fname[0] == 0)
+            {
                 break; // End of directory
             }
 
             // Check if the file name starts with "bioz-log-"
-            if (strncmp(fno.fname, file_prefix, strlen(file_prefix)) == 0) {
+            if (strncmp(fno.fname, file_prefix, strlen(file_prefix)) == 0)
+            {
                 // Extract the number after "bioz-log-"
                 char *number_part = fno.fname + strlen(file_prefix);
                 char *dot_position = strchr(number_part, '.');
-                if (dot_position != NULL) {
+                if (dot_position != NULL)
+                {
                     *dot_position = '\0'; // Temporarily null-terminate to isolate the number
                     int current_n = atoi(number_part);
-                    if (current_n > max_n) {
+                    if (current_n > max_n)
+                    {
                         max_n = current_n;
                     }
                 }
             }
         }
         f_closedir(&dir);
-    } else {
+    }
+    else
+    {
         printf("Error opening directory: %s\n", FF_ERRORS[err]);
         return err;
     }
 
     int next_n = max_n + 1;
-    snprintf(temp_filename, MAXLEN, "%s%d%s", file_prefix, next_n, file_extension); // Create the next file name
-    snprintf(new_log_file, MAXLEN, "%s", temp_filename); // Copy the new file name to the output parameter
+    snprintf(temp_filename, MAXLEN, "%s%d%s", file_prefix, next_n, file_extension); // Construct full filename
+    snprintf(new_log_file, MAXLEN, "%s", temp_filename);                            // Save to global file path
 
-    if ((err = f_open(&file, (const TCHAR *)temp_filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+    // Create and open the file
+    if ((err = f_open(&file, (const TCHAR *)temp_filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK)
+    {
         printf("Error creating file: %s\n", FF_ERRORS[err]);
         return err;
     }
 
-    // printf("Created file: %s\n", temp_filename);
+    // Write CSV header line
+    const char *csv_header = "timestamp,Q,I\n";
+    if ((err = f_write(&file, csv_header, strlen(csv_header), &bytes_written)) != FR_OK)
+    {
+        printf("Error writing CSV header: %s\n", FF_ERRORS[err]);
+        f_close(&file);
+        return err;
+    }
 
-    if ((err = f_close(&file)) != FR_OK) {
+    if ((err = f_close(&file)) != FR_OK)
+    {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
         return err;
     }
@@ -400,38 +463,44 @@ int example()
 {
     unsigned int length = 256;
 
-    if ((err = formatSDHC()) != FR_OK) {
+    if ((err = formatSDHC()) != FR_OK)
+    {
         printf("Error Formatting SD Card: %s\n", FF_ERRORS[err]);
         return err;
     }
 
-    //open SD Card
-    if ((err = mount()) != FR_OK) {
+    // open SD Card
+    if ((err = mount()) != FR_OK)
+    {
         printf("Error opening SD Card: %s\n", FF_ERRORS[err]);
         return err;
     }
 
     printf("SD Card Opened!\n");
 
-    if ((err = f_setlabel("MAXIM")) != FR_OK) {
+    if ((err = f_setlabel("MAXIM")) != FR_OK)
+    {
         printf("Error setting drive label: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
     }
 
-    if ((err = f_getfree(&volume, &clusters_free, &fs)) != FR_OK) {
+    if ((err = f_getfree(&volume, &clusters_free, &fs)) != FR_OK)
+    {
         printf("Error finding free size of card: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
     }
 
-    if ((err = f_getlabel(&volume, volume_label, &volume_sn)) != FR_OK) {
+    if ((err = f_getlabel(&volume, volume_label, &volume_sn)) != FR_OK)
+    {
         printf("Error reading drive label: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
     }
 
-    if ((err = f_open(&file, "0:HelloWorld.txt", FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+    if ((err = f_open(&file, "0:HelloWorld.txt", FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK)
+    {
         printf("Error opening file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -441,7 +510,8 @@ int example()
 
     generateMessage(length);
 
-    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK) {
+    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK)
+    {
         printf("Error writing file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -449,7 +519,8 @@ int example()
 
     printf("%d bytes written to file!\n", bytes_written);
 
-    if ((err = f_close(&file)) != FR_OK) {
+    if ((err = f_close(&file)) != FR_OK)
+    {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -457,7 +528,8 @@ int example()
 
     printf("File Closed!\n");
 
-    if ((err = f_chmod("HelloWorld.txt", 0, AM_RDO | AM_ARC | AM_SYS | AM_HID)) != FR_OK) {
+    if ((err = f_chmod("HelloWorld.txt", 0, AM_RDO | AM_ARC | AM_SYS | AM_HID)) != FR_OK)
+    {
         printf("Error in chmod: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -465,10 +537,12 @@ int example()
 
     err = f_stat("MaximSDHC", &fno);
 
-    if (err == FR_NO_FILE) {
+    if (err == FR_NO_FILE)
+    {
         printf("Creating Directory...\n");
 
-        if ((err = f_mkdir("MaximSDHC")) != FR_OK) {
+        if ((err = f_mkdir("MaximSDHC")) != FR_OK)
+        {
             printf("Error creating directory: %s\n", FF_ERRORS[err]);
             f_mount(NULL, "", 0);
             return err;
@@ -478,13 +552,15 @@ int example()
     printf("Renaming File...\n");
 
     if ((err = f_rename("0:HelloWorld.txt", "0:MaximSDHC/HelloMaxim.txt")) !=
-        FR_OK) { //cr: clearify 0:file notation
+        FR_OK)
+    { // cr: clearify 0:file notation
         printf("Error moving file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
     }
 
-    if ((err = f_chdir("/MaximSDHC")) != FR_OK) {
+    if ((err = f_chdir("/MaximSDHC")) != FR_OK)
+    {
         printf("Error in chdir: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -492,13 +568,15 @@ int example()
 
     printf("Attempting to read back file...\n");
 
-    if ((err = f_open(&file, "HelloMaxim.txt", FA_READ)) != FR_OK) {
+    if ((err = f_open(&file, "HelloMaxim.txt", FA_READ)) != FR_OK)
+    {
         printf("Error opening file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
     }
 
-    if ((err = f_read(&file, &message, bytes_written, &bytes_read)) != FR_OK) {
+    if ((err = f_read(&file, &message, bytes_written, &bytes_read)) != FR_OK)
+    {
         printf("Error reading file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -509,7 +587,8 @@ int example()
     printf("%s", message);
     printf("\n");
 
-    if ((err = f_close(&file)) != FR_OK) {
+    if ((err = f_close(&file)) != FR_OK)
+    {
         printf("Error closing file: %s\n", FF_ERRORS[err]);
         f_mount(NULL, "", 0);
         return err;
@@ -517,9 +596,10 @@ int example()
 
     printf("File Closed!\n");
 
-    //unmount SD Card
-    //f_mount(fs, "", 0);
-    if ((err = f_mount(NULL, "", 0)) != FR_OK) {
+    // unmount SD Card
+    // f_mount(fs, "", 0);
+    if ((err = f_mount(NULL, "", 0)) != FR_OK)
+    {
         printf("Error unmounting volume: %s\n", FF_ERRORS[err]);
         return err;
     }
@@ -538,13 +618,15 @@ void waitCardInserted()
     cardDetect.vssel = MXC_GPIO_VSSEL_VDDIOH;
 
     MXC_GPIO_Config(&cardDetect);
- 
+
     // Exit function if card is already inserted
-    if (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) == 0) {
+    if (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) == 0)
+    {
         return;
     }
 
-    while (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) != 0) {
+    while (MXC_GPIO_InGet(MXC_GPIO0, MXC_GPIO_PIN_12) != 0)
+    {
         // Spin waiting for card to be inserted.
     }
 

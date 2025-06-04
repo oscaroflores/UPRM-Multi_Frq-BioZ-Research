@@ -35,7 +35,8 @@ int count;
 extern int errCnt;
 extern uint32_t sample_interval_us;
 
-int initSPI() {
+int initSPI()
+{
   /*
   Function to start SPI communication - called at start of main
 
@@ -54,28 +55,32 @@ int initSPI() {
 
   retVal = MXC_SPI_Init(SPI, 1, 0, 1, 0, SPI_SPEED, spi_pins); // initialise SPI
 
-  if (retVal != E_NO_ERROR) {
+  if (retVal != E_NO_ERROR)
+  {
     printf("\nSPI INITIALIZATION ERROR\n");
     return retVal;
   }
 
   retVal = MXC_SPI_SetMode(SPI, 0); // ** SPI modes different in SDK
 
-  if (retVal != E_NO_ERROR) {
+  if (retVal != E_NO_ERROR)
+  {
     printf("\nMODE ERROR\n");
     return retVal;
   }
 
   retVal = MXC_SPI_SetDataSize(SPI, 8); // num of bits per character, 8 as byte
 
-  if (retVal != E_NO_ERROR) {
+  if (retVal != E_NO_ERROR)
+  {
     printf("\nSPI SET DATASIZE ERROR: %d\n", retVal);
     return retVal;
   }
 
   retVal = MXC_SPI_SetWidth(SPI, SPI_WIDTH_STANDARD);
 
-  if (retVal != E_NO_ERROR) {
+  if (retVal != E_NO_ERROR)
+  {
     printf("\nSPI SET WIDTH ERROR: %d\n", retVal);
     return retVal;
   }
@@ -84,7 +89,8 @@ int initSPI() {
 }
 
 uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
-              uint8_t rx_len) {
+              uint8_t rx_len)
+{
   /*
   This is a function to perform simple SPI transactions
   It is called within regRead or regWrite
@@ -102,22 +108,24 @@ uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
   req.txData = (uint8_t *)tx_buf; // buffer with transmit data
   req.rxData = rx_buf;            // buffer for received data
   req.txLen = tx_len;             // num of bytes to be sent
-  req.rxLen = rx_len; // num of bytes to receive (from regread/write)
-  req.ssIdx = 0;      // slave select line to use
-  req.ssDeassert = 1; // ? deassert ss at end of transaction
-  req.txCnt = 0;      // num ac transmitted
-  req.rxCnt = 0;      // num stored
+  req.rxLen = rx_len;             // num of bytes to receive (from regread/write)
+  req.ssIdx = 0;                  // slave select line to use
+  req.ssDeassert = 1;             // ? deassert ss at end of transaction
+  req.txCnt = 0;                  // num ac transmitted
+  req.rxCnt = 0;                  // num stored
   req.completeCB = NULL;
 
   err = MXC_SPI_MasterTransaction(&req);
 
-  if (err != E_NO_ERROR) {
+  if (err != E_NO_ERROR)
+  {
     printf("\nSPI TRANSACTION FAIL: %d\n", err);
     return err;
   }
 
   int i = 0;
-  for (i = 0; i < rx_len; i++) {
+  for (i = 0; i < rx_len; i++)
+  {
     gReadBuf[i] = rx_buf[i];
   }
 
@@ -126,7 +134,8 @@ uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
 
 void sleep(uint32_t ms) {}
 
-void regWrite(uint8_t regAddr, uint8_t val) {
+void regWrite(uint8_t regAddr, uint8_t val)
+{
   /*
   Function to write to register
   */
@@ -141,7 +150,8 @@ void regWrite(uint8_t regAddr, uint8_t val) {
     printf("ERROR %X \n", x);
 }
 
-int regRead(uint8_t regAddr) {
+int regRead(uint8_t regAddr)
+{
   /*
 
   Function to read from register
@@ -157,21 +167,25 @@ int regRead(uint8_t regAddr) {
   tx_buf[ix++] = 0x80;
   tx_buf[ix] = 0x0;
 
-  for (i = 0; i < tx_len; i++) {
+  for (i = 0; i < tx_len; i++)
+  {
     rx_buf[i] = 0x0;
   }
 
   int err;
 
   err = doSPI(tx_buf, tx_len, rx_buf, tx_len);
-  if (err == 0) {
+  if (err == 0)
+  {
 
     return gReadBuf[2];
-  } else
+  }
+  else
     return err;
 }
 
-int shutdownSPI() {
+int shutdownSPI()
+{
   /*
 
   End SPI communication at end of transactions
@@ -180,30 +194,35 @@ int shutdownSPI() {
   int retVal = 0;
   retVal = MXC_SPI_Shutdown(SPI);
 
-  if (retVal != E_NO_ERROR) {
+  if (retVal != E_NO_ERROR)
+  {
     printf("\n-->SPI SHUTDOWN ERROR: %d\n", retVal);
     return retVal;
   }
 
-  else {
+  else
+  {
     printf("SPI shutdown \n");
     return E_NO_ERROR;
   }
 }
 
-void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits) {
+void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits)
+{
   /*
   This is a function to change specific bits of the byte
   */
 
   int i = 0;
   uint8_t x1 = 0;
-  for (i = 7; i > bit1; i--) {
+  for (i = 7; i > bit1; i--)
+  {
     x1 = x1 + pow(2, i);
   }
 
   uint8_t x2 = 0;
-  for (i = 0; i < (bit1 - numBits + 1); i++) {
+  for (i = 0; i < (bit1 - numBits + 1); i++)
+  {
 
     x2 = x2 + (pow(2, i));
   }
@@ -216,7 +235,8 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits) {
   regWrite(regAddr, newBits);
 }
 
-int spiBurst() {
+int spiBurst()
+{
   uint8_t regAddr = 0x0C;
   int err = 0;
 
@@ -246,7 +266,8 @@ int spiBurst() {
   req.completeCB = NULL;
 
   err = MXC_SPI_MasterTransaction(&req);
-  if (err != E_NO_ERROR) {
+  if (err != E_NO_ERROR)
+  {
     printf("\nSPI TRANSACTION FAIL: %d\n", err);
     return err;
   }
@@ -255,8 +276,10 @@ int spiBurst() {
   uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
   int sample_index = 0;
 
-  for (int i = 0; i < fifoCount; i++) {
-    if (rx_buf[i] != 0) {
+  for (int i = 0; i < fifoCount; i++)
+  {
+    if (rx_buf[i] != 0)
+    {
       gHold[0] = rx_buf[i];
       gHold[1] = rx_buf[i + 1];
       gHold[2] = rx_buf[i + 2];
@@ -265,7 +288,8 @@ int spiBurst() {
       while (i < fifoCount && rx_buf[i] == 0)
         i++;
 
-      if (i + 2 < fifoCount) {
+      if (i + 2 < fifoCount)
+      {
         gHold[3] = rx_buf[i];
         gHold[4] = rx_buf[i + 1];
         gHold[5] = rx_buf[i + 2];

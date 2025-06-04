@@ -7,3 +7,4 @@ void SFBIAsettings();
 uint32_t getSampleInterval();
 uint32_t getRefClkHz();
 extern uint32_t start_time_ms;
+void setFreq(int freq);
