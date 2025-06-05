@@ -46,12 +46,8 @@ int current_freq_kHz = 150; // start frequency, matches initial setFreq(150)
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
-extern int count;
-extern double sr_bioz;
-volatile bool fifoNeedsService = false; // Global
 extern uint32_t sample_interval_us;
 extern sample_index;
-volatile bool buttonPressed = false; // Global flag
 
 void buttonISR(void *unused)
 {
@@ -60,12 +56,12 @@ void buttonISR(void *unused)
 
   if (regRead(0x20) == 0x00)
   {
-    regWrite(0x20, 0xBF);
+    changeReg(0x20, 0x7, 2, 3);
+    sample_index = 0;
   }
   else
   {
-    regWrite(0x20, 0x00);
-    sample_index = 0;
+    changeReg(0x20, 0x0, 2, 3);
   }
 }
 
