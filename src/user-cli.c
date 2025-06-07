@@ -184,8 +184,8 @@ int handle_start(int argc, char *argv[])
 
   // Set bits [2:0] = 111 (enable)
   changeReg(0x20, 0x7, 2, 3);
-
   sample_index = 0;
+  createNextBiozLogFile();
 
   return E_NO_ERROR;
 }

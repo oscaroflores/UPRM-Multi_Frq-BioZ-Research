@@ -41,7 +41,7 @@ vital signs depending on necessities
 #define SPI_IRQ SPI1_IRQn
 
 /***** Globals *****/
-int current_freq_kHz = 150; // start frequency, matches initial setFreq(150)
+int current_freq_kHz = 150;
 
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
@@ -83,15 +83,15 @@ void setupButtonInterrupt()
 
   NVIC_EnableIRQ(MXC_GPIO_GET_IRQ(0)); // Enable NVIC interrupt for GPIO0 block
 }
-
 void sensorISR(void *unused)
 {
-  // regRead(0x00);                                   // Read and clear status register
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_25); // Clear interrupt
 
-  spiBurst(); // Read and process current FIFO
+  // uint32_t t_start = MXC_TMR_GetCount(MXC_TMR1);
 
-  // Alternate frequency AFTER processing the current burst
+  spiBurst(); // Time this
+
+  // // Alternate frequency AFTER processing the current burst
   if (current_freq_kHz == 5)
   {
     current_freq_kHz = 150;
@@ -102,6 +102,10 @@ void sensorISR(void *unused)
   }
 
   setFreq(current_freq_kHz);
+  // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
+  // uint32_t delta = t_end - t_start;
+
+  // printf("spiBurst took %lu cycles\n", delta);
 }
 
 void setupMax30009Interrupt(void)
@@ -134,9 +138,9 @@ int main(void)
   {
     return err;
   }
-  initSPI();       // Setup SPI
-  SFBIAsettings(); // Set up correct sensor registers for SFBIA
-  setFreq(150);    // Set frequency to 150 kHz
+  initSPI();                 // Setup SPI
+  SFBIAsettings();           // Set up correct sensor registers for SFBIA
+  setFreq(current_freq_kHz); // Set frequency to 150 kHz
   setupButtonInterrupt();
   setupMax30009Interrupt();
 
@@ -153,10 +157,22 @@ int main(void)
   MXC_TMR_Start(MXC_TMR0);
   sample_interval_us = getSampleInterval();
 
+  mxc_tmr_cfg_t timer1_cfg;
+  timer1_cfg.pres = TMR_PRES_1;
+  timer1_cfg.mode = TMR_MODE_CONTINUOUS;
+  timer1_cfg.bitMode = TMR_BIT_MODE_32;
+  timer1_cfg.clock = MXC_TMR_APB_CLK;
+  timer1_cfg.cmp_cnt = 0xFFFFFFFF;
+  timer1_cfg.pol = 0;
+
+  MXC_TMR_Init(MXC_TMR1, &timer1_cfg, false);
+  MXC_TMR_Start(MXC_TMR1);
+
   // Main loop
   while (1)
   {
-    regRead(0x00);
+    // regRead(0x00);
+    // printf("I'm alive!\n");
   }
 
   printf("error count = %d\n", errCnt);

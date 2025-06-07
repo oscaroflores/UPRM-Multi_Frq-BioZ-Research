@@ -1,4 +1,4 @@
-C:/Users/ricardo.blanco1/UPRM-Multi_Frq-BioZ-Research/build/bioZ.o: \
+C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/bioZ.o: \
  src/bioZ.c include/MAX30009.h include/MAX32655.h \
  c:\maximsdk\tools\gnutools\10.3\lib\gcc\arm-none-eabi\10.3.1\include\stdint.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdint.h \

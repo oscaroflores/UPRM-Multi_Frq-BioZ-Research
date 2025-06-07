@@ -343,12 +343,12 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused)
   sample_index++;                                                          // Increment sample index for next sample timestamp
 
   // Calculate M divider value from registers 0x17 and 0x18
-  // int mdiv_high = (regRead(0x17) >> 6) & 0x03;
-  // int mdiv_low = regRead(0x18);
-  // int M = (mdiv_high << 8) | mdiv_low;
+  int mdiv_high = (regRead(0x17) >> 6) & 0x03;
+  int mdiv_low = regRead(0x18);
+  int M = (mdiv_high << 8) | mdiv_low;
 
-  // double PLL_CLK = getRefClkHz() * (M + 1);            // Calculate PLL clock frequency
-  // double F_BIOZ = PLL_CLK / (getKDiv() * getDACOSR()); // Calculate BioZ frequency
+  double PLL_CLK = getRefClkHz() * (M + 1);            // Calculate PLL clock frequency
+  double F_BIOZ = PLL_CLK / (getKDiv() * getDACOSR()); // Calculate BioZ frequency
 
   // Debugging prints
 
@@ -357,28 +357,28 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused)
   // printf("DAC OSR: %d\n", getDACOSR());
   // printf("K Divider: %d\n", getKDiv());
   // printf("BioZ Frequency: %.2f Hz\n", F_BIOZ);
-  // printf("t = %lu ms\tFreq = %d kHz\tQ = %.2f\tI = %.2f\t SR: %.4f\t OVF: %d\n", timestamp, current_freq_kHz, Q, I, sr_bioz, regRead(0x0A) & 0x0F);
+  printf("t = %lu ms\tFreq = %f kHz\tQ = %.2f\tI = %.2f\n", timestamp, F_BIOZ, Q, I);
   // printf("overflow count = %d\n", regRead(0x0A) & 0x0F); // Read overflow count from register 0x1B
   // printf("SR: %.4f\n", sr_bioz);
   // -- Print the results --
   // printf("%lu\t", timestamp);
   // printf("%.1f\t", Q);
   // printf("%.1f\t", I);
-  printf("%d\n", current_freq_kHz);
+  // printf("%d\n", current_freq_kHz);
   // printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
 
   // SD card upload
-  // char log_entry[128];
-  // int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%d,%d,%d\n", timestamp, Q, I, current_freq_kHz);
+  char log_entry[128];
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q, I, F_BIOZ);
 
-  // if (log_len < 0 || log_len >= sizeof(log_entry))
-  // {
-  //   printf("Error formatting log entry.\n");
-  //   return -1;
-  // }
+  if (log_len < 0 || log_len >= sizeof(log_entry))
+  {
+    printf("Error formatting log entry.\n");
+    return -1;
+  }
 
-  // setMessage(log_entry);
-  // appendFile(new_log_file, log_len);
+  setMessage(log_entry);
+  appendFile(new_log_file, log_len);
 
   return err;
 }

@@ -1,4 +1,4 @@
-C:/Users/ricardo.blanco1/UPRM-Multi_Frq-BioZ-Research/build/sdhc.o: \
+C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/sdhc.o: \
  src/sdhc.c include/sdhc.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdio.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\_ansi.h \
