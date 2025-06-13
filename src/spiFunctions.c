@@ -100,7 +100,7 @@ uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
 
 
   */
-  MXC_Delay(MXC_DELAY_MSEC(1));
+  MXC_Delay(MXC_DELAY_USEC(100));
 
   int err;
 
@@ -240,7 +240,6 @@ int spiBurst()
   uint8_t regAddr = 0x0C;
   int err = 0;
 
-  regRead(0x00); // Read and clear status
   regRead(0x0A);
   uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
   regRead(0x0B);
@@ -299,6 +298,74 @@ int spiBurst()
             burst_timestamp - (sample_interval_us * sample_index++);
 
         calcBioZ(gHold, this_sample_ts);
+      }
+    }
+  }
+
+  return err;
+}
+
+int spiBurstnoPrint()
+{
+  uint8_t regAddr = 0x0C;
+  int err = 0;
+
+  regRead(0x0A);
+  uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
+  regRead(0x0B);
+  fifoCount += gReadBuf[2];
+
+  uint8_t tx_buf[fifoCount];
+  uint8_t rx_buf[fifoCount];
+  memset(tx_buf, 0, fifoCount);
+  memset(rx_buf, 0, fifoCount);
+
+  tx_buf[0] = regAddr;
+  tx_buf[1] = 0x80;
+
+  req.spi = SPI;
+  req.txData = tx_buf;
+  req.rxData = rx_buf;
+  req.txLen = fifoCount;
+  req.rxLen = fifoCount;
+  req.ssIdx = 0;
+  req.ssDeassert = 1;
+  req.txCnt = 0;
+  req.rxCnt = 0;
+  req.completeCB = NULL;
+
+  err = MXC_SPI_MasterTransaction(&req);
+  if (err != E_NO_ERROR)
+  {
+    printf("\nSPI TRANSACTION FAIL: %d\n", err);
+    return err;
+  }
+
+  // Define these here
+  uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
+  int sample_index = 0;
+
+  for (int i = 0; i < fifoCount; i++)
+  {
+    if (rx_buf[i] != 0)
+    {
+      gHold[0] = rx_buf[i];
+      gHold[1] = rx_buf[i + 1];
+      gHold[2] = rx_buf[i + 2];
+      i += 3;
+
+      while (i < fifoCount && rx_buf[i] == 0)
+        i++;
+
+      if (i + 2 < fifoCount)
+      {
+        gHold[3] = rx_buf[i];
+        gHold[4] = rx_buf[i + 1];
+        gHold[5] = rx_buf[i + 2];
+        i += 2;
+
+        uint32_t this_sample_ts =
+            burst_timestamp - (sample_interval_us * sample_index++);
       }
     }
   }

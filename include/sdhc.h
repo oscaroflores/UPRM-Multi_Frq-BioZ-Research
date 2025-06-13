@@ -39,7 +39,8 @@
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define MAXLEN 256
-
+extern FIL file; // FFat File Object
+extern TCHAR *FF_ERRORS[20];
 extern char new_log_file[64];
 
 /***** FUNCTION PROTOTYPES *****/
@@ -74,4 +75,7 @@ int createNextBiozLogFile();
 
 void setMessage(const char *message);
 
+int openLogFile();
+
+int closeLogFile();
 #endif // EXAMPLES_MAX32655_SDHC_FTHR_INCLUDE_SDHC_H_

@@ -41,13 +41,14 @@ vital signs depending on necessities
 #define SPI_IRQ SPI1_IRQn
 
 /***** Globals *****/
-int current_freq_kHz = 150;
+int current_freq_kHz = 5;
 
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
 extern uint32_t sample_interval_us;
 extern sample_index;
+int samples_discarded;
 
 void buttonISR(void *unused)
 {
@@ -85,27 +86,41 @@ void setupButtonInterrupt()
 }
 void sensorISR(void *unused)
 {
+
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_25); // Clear interrupt
+  regRead(0x00);
 
-  // uint32_t t_start = MXC_TMR_GetCount(MXC_TMR1);
-
-  spiBurst(); // Time this
-
-  // // Alternate frequency AFTER processing the current burst
-  if (current_freq_kHz == 5)
+  if (samples_discarded < 4)
   {
-    current_freq_kHz = 150;
+    samples_discarded++;
+    sample_index++;
+    spiBurstnoPrint(); // Read the FIFO, but don't print anything
+    // printf("discarded = %d\n", samples_discarded);
   }
   else
   {
-    current_freq_kHz = 5;
+
+    // uint32_t t_start = MXC_TMR_GetCount(MXC_TMR1);
+
+    spiBurst(); // Time this
+
+    // Alternate frequency AFTER processing the current burst
+    if (current_freq_kHz == 5)
+    {
+      current_freq_kHz = 150;
+    }
+    else
+    {
+      current_freq_kHz = 5;
+    }
+    setFreq(current_freq_kHz);
+
+    // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
+    // uint32_t delta = t_end - t_start;
+
+    // printf("spiBurst took %lu cycles\n", delta);
+    samples_discarded = 0;
   }
-
-  setFreq(current_freq_kHz);
-  // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
-  // uint32_t delta = t_end - t_start;
-
-  // printf("spiBurst took %lu cycles\n", delta);
 }
 
 void setupMax30009Interrupt(void)
@@ -173,6 +188,7 @@ int main(void)
   {
     // regRead(0x00);
     // printf("I'm alive!\n");
+    // printf("samples_discarded = %d\n", samples_discarded);
   }
 
   printf("error count = %d\n", errCnt);

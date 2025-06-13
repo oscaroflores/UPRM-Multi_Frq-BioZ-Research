@@ -632,3 +632,33 @@ void waitCardInserted()
 
     // Card has been detected, exit the function.
 }
+int openLogFile()
+{
+    if (!mounted)
+        mount();
+
+    err = f_open(&file, new_log_file, FA_OPEN_APPEND | FA_WRITE);
+    if (err != FR_OK)
+    {
+        printf("Error opening log file: %s\n", FF_ERRORS[err]);
+        return err;
+    }
+    return FR_OK;
+}
+
+int closeLogFile()
+{
+    err = f_sync(&file);
+    if (err != FR_OK)
+    {
+        printf("Error syncing log file: %s\n", FF_ERRORS[err]);
+    }
+
+    err = f_close(&file);
+    if (err != FR_OK)
+    {
+        printf("Error closing log file: %s\n", FF_ERRORS[err]);
+    }
+
+    return err;
+}

@@ -1,4 +1,4 @@
-C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
+C:/Users/ricardo.blanco1/Projects/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
  main.c C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
  include/max32655.h \

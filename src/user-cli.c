@@ -180,12 +180,19 @@ int handle_start(int argc, char *argv[])
     return E_INVALID;
   }
 
-  // createNextBiozLogFile();
-
-  // Set bits [2:0] = 111 (enable)
-  changeReg(0x20, 0x7, 2, 3);
   sample_index = 0;
-  createNextBiozLogFile();
+  FRESULT err; // FFat Result (Struct)
+
+  // Create the new file and write CSV header
+  if ((err = createNextBiozLogFile()) != FR_OK)
+    return err;
+
+  // Open it once for streaming append
+  if ((err = openLogFile()) != FR_OK)
+    return err;
+
+  // Enable sampling
+  changeReg(0x20, 0x7, 2, 3);
 
   return E_NO_ERROR;
 }
@@ -198,8 +205,11 @@ int handle_stop(int argc, char *argv[])
     return E_INVALID;
   }
 
-  // Set bits [2:0] = 000 (disable)
+  // Disable sampling
   changeReg(0x20, 0x0, 2, 3);
+
+  // Close file
+  closeLogFile();
 
   return E_NO_ERROR;
 }
