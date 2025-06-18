@@ -25,6 +25,7 @@ vital signs depending on necessities
 #include "sdhc.h"
 #include "spi.h"
 #include "spiFunctions.h"
+#include "rtc.h"
 #include "tmr.h"
 #include "uart.h"
 #include "user-cli.h"
@@ -41,8 +42,7 @@ vital signs depending on necessities
 #define SPI_IRQ SPI1_IRQn
 
 /***** Globals *****/
-int current_freq_kHz = 5;
-
+int current_freq = 0;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
@@ -105,15 +105,15 @@ void sensorISR(void *unused)
     spiBurst(); // Time this
 
     // Alternate frequency AFTER processing the current burst
-    if (current_freq_kHz == 5)
+    if (current_freq == 0)
     {
-      current_freq_kHz = 150;
+      current_freq = 1;
     }
     else
     {
-      current_freq_kHz = 5;
+      current_freq = 0;
     }
-    setFreq(current_freq_kHz);
+    setFreq(current_freq);
 
     // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
     // uint32_t delta = t_end - t_start;
@@ -144,6 +144,7 @@ void setupMax30009Interrupt(void)
 
 int main(void)
 {
+
   int err;
 
   printf("START\n");
@@ -153,9 +154,9 @@ int main(void)
   {
     return err;
   }
-  initSPI();                 // Setup SPI
-  SFBIAsettings();           // Set up correct sensor registers for SFBIA
-  setFreq(current_freq_kHz); // Set frequency to 150 kHz
+  initSPI();             // Setup SPI
+  SFBIAsettings();       // Set up correct sensor registers for SFBIA
+  setFreq(current_freq); // Set frequency to 150 kHz
   setupButtonInterrupt();
   setupMax30009Interrupt();
 
@@ -186,9 +187,6 @@ int main(void)
   // Main loop
   while (1)
   {
-    // regRead(0x00);
-    // printf("I'm alive!\n");
-    // printf("samples_discarded = %d\n", samples_discarded);
   }
 
   printf("error count = %d\n", errCnt);

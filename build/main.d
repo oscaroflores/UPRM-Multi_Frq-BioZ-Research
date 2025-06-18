@@ -80,4 +80,7 @@ C:/Users/ricardo.blanco1/Projects/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_lock.h \
  include/spiFunctions.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\math.h \
- include/MAX30009.h include/MAX32655.h include/user-cli.h
+ include/MAX30009.h include/MAX32655.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h \
+ include/user-cli.h

@@ -81,4 +81,6 @@ C:/Users/ricardo.blanco1/Projects/UPRM-Multi_Frq-BioZ-Research/build/bioZ.o: \
  include/MAX30009.h include/MAX32655.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/tmr_regs.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h

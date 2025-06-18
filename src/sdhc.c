@@ -20,7 +20,8 @@
  ******************************************************************************/
 
 #include "sdhc.h"
-
+#include "rtc.h"
+#include "time.h"
 /***** Globals *****/
 FATFS *fs; // FFat Filesystem Object
 FATFS fs_obj;
@@ -389,36 +390,28 @@ int createNextBiozLogFile()
         mount();
     }
 
-    int max_n = -1; // Start with -1 to handle the case where no files are found
+    int max_n = -1;
     char file_prefix[] = "bioz-log-";
-    char file_extension[] = ".csv"; // CHANGED from .txt to .csv
+    char file_extension[] = ".csv";
     char temp_filename[MAXLEN];
 
-    // Open the current directory
     if ((err = f_opendir(&dir, cwd)) == FR_OK)
     {
         while (1)
         {
             err = f_readdir(&dir, &fno);
             if (err != FR_OK || fno.fname[0] == 0)
-            {
-                break; // End of directory
-            }
+                break;
 
-            // Check if the file name starts with "bioz-log-"
             if (strncmp(fno.fname, file_prefix, strlen(file_prefix)) == 0)
             {
-                // Extract the number after "bioz-log-"
                 char *number_part = fno.fname + strlen(file_prefix);
-                char *dot_position = strchr(number_part, '.');
-                if (dot_position != NULL)
+                char *dash = strchr(number_part, '-');
+                if (dash && strchr(dash, '.'))
                 {
-                    *dot_position = '\0'; // Temporarily null-terminate to isolate the number
-                    int current_n = atoi(number_part);
+                    int current_n = atoi(dash + 1);
                     if (current_n > max_n)
-                    {
                         max_n = current_n;
-                    }
                 }
             }
         }
@@ -431,18 +424,35 @@ int createNextBiozLogFile()
     }
 
     int next_n = max_n + 1;
-    snprintf(temp_filename, MAXLEN, "%s%d%s", file_prefix, next_n, file_extension); // Construct full filename
-    snprintf(new_log_file, MAXLEN, "%s", temp_filename);                            // Save to global file path
 
-    // Create and open the file
+    // Get RTC raw second count (since boot or set)
+    uint32_t sec;
+    if (MXC_RTC_GetSeconds(&sec) != E_NO_ERROR)
+    {
+        printf("RTC read failed.\n");
+        return -1;
+    }
+    time_t rawtime = sec;
+    struct tm *timeinfo = localtime(&rawtime);
+
+    snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%d%s",
+             file_prefix,
+             timeinfo->tm_year + 1900,
+             timeinfo->tm_mon + 1,
+             timeinfo->tm_mday,
+             next_n,
+             file_extension);
+
+    snprintf(new_log_file, MAXLEN, "%s", temp_filename); // Save to global file path
+    // printf("Log file created: %s\n", new_log_file);      // <-- ADD THIS LINE
+
     if ((err = f_open(&file, (const TCHAR *)temp_filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK)
     {
         printf("Error creating file: %s\n", FF_ERRORS[err]);
         return err;
     }
 
-    // Write CSV header line
-    const char *csv_header = "timestamp,Q,I\n";
+    const char *csv_header = "timestamp,Q,I,F\n";
     if ((err = f_write(&file, csv_header, strlen(csv_header), &bytes_written)) != FR_OK)
     {
         printf("Error writing CSV header: %s\n", FF_ERRORS[err]);
@@ -457,154 +467,6 @@ int createNextBiozLogFile()
     }
 
     return FR_OK;
-}
-
-int example()
-{
-    unsigned int length = 256;
-
-    if ((err = formatSDHC()) != FR_OK)
-    {
-        printf("Error Formatting SD Card: %s\n", FF_ERRORS[err]);
-        return err;
-    }
-
-    // open SD Card
-    if ((err = mount()) != FR_OK)
-    {
-        printf("Error opening SD Card: %s\n", FF_ERRORS[err]);
-        return err;
-    }
-
-    printf("SD Card Opened!\n");
-
-    if ((err = f_setlabel("MAXIM")) != FR_OK)
-    {
-        printf("Error setting drive label: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    if ((err = f_getfree(&volume, &clusters_free, &fs)) != FR_OK)
-    {
-        printf("Error finding free size of card: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    if ((err = f_getlabel(&volume, volume_label, &volume_sn)) != FR_OK)
-    {
-        printf("Error reading drive label: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    if ((err = f_open(&file, "0:HelloWorld.txt", FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK)
-    {
-        printf("Error opening file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    // printf("File opened!\n");
-
-    generateMessage(length);
-
-    if ((err = f_write(&file, &message, length, &bytes_written)) != FR_OK)
-    {
-        printf("Error writing file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    printf("%d bytes written to file!\n", bytes_written);
-
-    if ((err = f_close(&file)) != FR_OK)
-    {
-        printf("Error closing file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    printf("File Closed!\n");
-
-    if ((err = f_chmod("HelloWorld.txt", 0, AM_RDO | AM_ARC | AM_SYS | AM_HID)) != FR_OK)
-    {
-        printf("Error in chmod: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    err = f_stat("MaximSDHC", &fno);
-
-    if (err == FR_NO_FILE)
-    {
-        printf("Creating Directory...\n");
-
-        if ((err = f_mkdir("MaximSDHC")) != FR_OK)
-        {
-            printf("Error creating directory: %s\n", FF_ERRORS[err]);
-            f_mount(NULL, "", 0);
-            return err;
-        }
-    }
-
-    printf("Renaming File...\n");
-
-    if ((err = f_rename("0:HelloWorld.txt", "0:MaximSDHC/HelloMaxim.txt")) !=
-        FR_OK)
-    { // cr: clearify 0:file notation
-        printf("Error moving file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    if ((err = f_chdir("/MaximSDHC")) != FR_OK)
-    {
-        printf("Error in chdir: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    printf("Attempting to read back file...\n");
-
-    if ((err = f_open(&file, "HelloMaxim.txt", FA_READ)) != FR_OK)
-    {
-        printf("Error opening file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    if ((err = f_read(&file, &message, bytes_written, &bytes_read)) != FR_OK)
-    {
-        printf("Error reading file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    printf("Read Back %d bytes\n", bytes_read);
-    printf("Message: ");
-    printf("%s", message);
-    printf("\n");
-
-    if ((err = f_close(&file)) != FR_OK)
-    {
-        printf("Error closing file: %s\n", FF_ERRORS[err]);
-        f_mount(NULL, "", 0);
-        return err;
-    }
-
-    printf("File Closed!\n");
-
-    // unmount SD Card
-    // f_mount(fs, "", 0);
-    if ((err = f_mount(NULL, "", 0)) != FR_OK)
-    {
-        printf("Error unmounting volume: %s\n", FF_ERRORS[err]);
-        return err;
-    }
-
-    return 0;
 }
 
 void waitCardInserted()

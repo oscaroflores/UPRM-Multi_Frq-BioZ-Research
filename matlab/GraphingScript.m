@@ -1,5 +1,5 @@
 % Load CSV file
-data = readmatrix('log2.csv');  
+data = readmatrix('log4.csv');  
 
 % Extract columns
 timestamp = data(:, 1);
@@ -23,11 +23,11 @@ for i = 1:length(unique_freqs)
     idx = freq == f;
 
     % Plot Q samples
-    plot(timestamp(idx), Q(idx), 'o', 'Color', colors(i, :), ...
+    plot(timestamp(idx), Q(idx), '-o', 'Color', colors(i, :), ...
         'DisplayName', ['Q @ ' num2str(f) ' Hz']);
 
     % Plot I samples
-    plot(timestamp(idx), I(idx), 'x', 'Color', colors(i, :), ...
+    plot(timestamp(idx), I(idx), '-x', 'Color', colors(i, :), ...
         'DisplayName', ['I @ ' num2str(f) ' Hz']);
 end
 

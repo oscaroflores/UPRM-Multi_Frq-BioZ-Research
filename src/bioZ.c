@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "rtc.h"
 uint32_t start_time_ms;
 
 extern int current_freq_kHz;
@@ -233,13 +233,13 @@ void setFreq(int freq)
 
   switch (freq)
   {
-  case 5:
-    changeReg(0x17, 5, 4, 4); // k_div = 32
+  case 0:
+    changeReg(0x17, 5, 4, 4); // k_div = 32, 5kHz
 
     break;
 
-  case 150:
-    changeReg(0x17, 0, 4, 4); // k_div = 1
+  case 1:
+    changeReg(0x17, 0, 4, 4); // k_div = 1, 150kHz
 
     break;
 
@@ -252,7 +252,7 @@ double convertCountsToOhms(double count)
 {
   const double V_REF = 1.0;
   const double TWO_OVER_PI = 2.0 / M_PI;
-  const double ADC_FS = 524288.0;
+  const double ADC_FS = pow(2, 19);
 
   double gain = getBiozGain();
   double i_mag = getBiozCurrent_uA() / 1e6;

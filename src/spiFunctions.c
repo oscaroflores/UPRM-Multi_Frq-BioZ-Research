@@ -11,6 +11,7 @@
 #include "nvic_table.h"
 #include "spi.h"
 #include "tmr.h"
+#include "rtc.h"
 #include "uart.h"
 #include "user-cli.h"
 #include <math.h>

@@ -66,4 +66,8 @@ C:/Users/ricardo.blanco1/Projects/UPRM-Multi_Frq-BioZ-Research/build/sdhc.o: \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
  C:/MaximSDK/Libraries/SDHC/ff15/source/ff.h \
- C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h
+ C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\time.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\time.h

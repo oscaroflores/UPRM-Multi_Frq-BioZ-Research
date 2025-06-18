@@ -77,4 +77,8 @@ C:/Users/ricardo.blanco1/Projects/UPRM-Multi_Frq-BioZ-Research/build/user-cli.o:
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\stdlib.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\alloca.h \
  C:/MaximSDK/Libraries/SDHC/ff15/source/ff.h \
- C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h include/user-cli.h
+ C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h include/user-cli.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\time.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\time.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h

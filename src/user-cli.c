@@ -25,7 +25,8 @@
 #include "sdhc.h"
 #include "user-cli.h"
 #include <stdlib.h>
-
+#import "time.h"
+#import "rtc.h"
 const command_t user_commands[] = {
     {"size", "size", "Find the Size of the SD Card and Free Space",
      handle_size},
@@ -39,8 +40,6 @@ const command_t user_commands[] = {
     {"add_data", "add_data <file name> <number of bytes to add>",
      "Add random Data to an Existing File", handle_add_data},
     {"del", "del <file name>", "Delete a file", handle_del},
-    {"fatfs", "fatfs", "Format Card and Run Example of FatFS Operations",
-     handle_fatfs},
     {"unmount", "unmount", "Unmount card", handle_unmount},
     {"start", "start", "Start recording", handle_start},
     {"stop", "stop", "Stop recording", handle_stop},
@@ -151,17 +150,6 @@ int handle_del(int argc, char *argv[])
   return deleteFile(argv[1]);
 }
 
-int handle_fatfs(int argc, char *argv[])
-{
-  if (argc != 1)
-  {
-    printf("Incorrect usage. Too many parameters.\n");
-    return E_INVALID;
-  }
-
-  return example();
-}
-
 int handle_unmount(int argc, char *argv[])
 {
   if (argc != 1)
@@ -174,26 +162,78 @@ int handle_unmount(int argc, char *argv[])
 }
 int handle_start(int argc, char *argv[])
 {
-  if (argc != 1)
+  if (argc != 3)
   {
-    printf("Incorrect usage. No parameters needed.\n");
+    printf("Usage: start YYYY-MM-DD HH:MM:SS\n");
     return E_INVALID;
   }
 
-  sample_index = 0;
-  FRESULT err; // FFat Result (Struct)
+  int year, month, day, hour, min, sec;
+  char datetime_str[32];
+  snprintf(datetime_str, sizeof(datetime_str), "%s %s", argv[1], argv[2]);
 
-  // Create the new file and write CSV header
+  if (sscanf(datetime_str, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &min, &sec) != 6)
+  {
+    printf("Invalid datetime format.\n");
+    return E_INVALID;
+  }
+
+  struct tm timeinfo = {
+      .tm_year = year - 1900,
+      .tm_mon = month - 1,
+      .tm_mday = day,
+      .tm_hour = hour,
+      .tm_min = min,
+      .tm_sec = sec};
+
+  time_t rawtime = mktime(&timeinfo);
+  if (rawtime == -1)
+  {
+    printf("Failed to convert time.\n");
+    return E_INVALID;
+  }
+
+  // printf("Setting RTC to: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hour, min, sec);
+
+  MXC_RTC_Stop(); // Just in case it's already running
+
+  if (MXC_RTC_Init((uint32_t)rawtime, 0) != E_NO_ERROR)
+  {
+    printf("RTC init failed!\n");
+    return E_UNKNOWN;
+  }
+
+  // Wait for RTC to become ready (needed on some MAX32655 silicon revs)
+  MXC_Delay(MSEC(10)); // Allow time for the RTC to start ticking
+
+  if (MXC_RTC_Start() != E_NO_ERROR)
+  {
+    printf("RTC start failed!\n");
+    return E_UNKNOWN;
+  }
+  // printf("RTC CTRL: 0x%08lx\n", MXC_RTC->ctrl);
+
+  // Small delay after start (not always necessary but safe)
+  MXC_Delay(MSEC(10));
+
+  // Confirm RTC is ticking
+  uint32_t sec_read, subsec;
+  if (MXC_RTC_GetSeconds(&sec_read) != E_NO_ERROR)
+  {
+    printf("RTC read failed!\n");
+    return E_UNKNOWN;
+  }
+  // printf("RTC started at UNIX time: %lu\n", sec_read);
+
+  sample_index = 0;
+
+  FRESULT err;
   if ((err = createNextBiozLogFile()) != FR_OK)
     return err;
-
-  // Open it once for streaming append
   if ((err = openLogFile()) != FR_OK)
     return err;
 
-  // Enable sampling
   changeReg(0x20, 0x7, 2, 3);
-
   return E_NO_ERROR;
 }
 

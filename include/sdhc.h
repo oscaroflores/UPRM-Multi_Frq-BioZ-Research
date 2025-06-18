@@ -67,8 +67,6 @@ int cd(char *dir_name);
 
 int deleteFile(char *file_name);
 
-int example();
-
 void waitCardInserted();
 
 int createNextBiozLogFile();
