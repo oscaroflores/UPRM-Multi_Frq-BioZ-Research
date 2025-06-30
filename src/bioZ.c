@@ -493,8 +493,13 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   // Convert to Ohms
   double I_ohm = convertCountsToOhms(I);
   double Q_ohm = convertCountsToOhms(Q);
-  double phase_rad = atan2(Q_ohm, I_ohm);
-  double phase_deg = phase_rad * (180.0 / M_PI);
+  // freq calc
+  double F_BIOZ = getBiozFreq();
+  // debug calcs
+
+  // double phase_rad = atan2(Q_ohm, I_ohm);
+  // double phase_deg = phase_rad * (180.0 / M_PI);
+
   // Debugging prints
 
   // printf("M Divider: %d\n", M);
@@ -514,12 +519,13 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   printf("%lu\t", timestamp);
   printf("%.1f\t", Q_ohm);
   printf("%.1f\t", I_ohm);
-  printf("%.1f\t", freqLogged);
-  printf("phase: %f\n", phase_deg);
+  printf("%.1f\t", F_BIOZ);
+  printf("%d\n", regRead(0x0A) & 0x80);
+  // printf("phase: %f\n", phase_deg);
 
   // SD card upload
   char log_entry[128];
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, freqLogged);
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
 
   if (log_len < 0 || log_len >= sizeof(log_entry))
   {
