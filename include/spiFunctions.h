@@ -20,6 +20,6 @@ int initSPI();
 void regWrite(uint8_t regAddr, uint8_t val);
 int regRead(uint8_t regAddr);
 int shutdownSPI();
-int spiBurst();
+int spiBurst(double freqLogged);
 uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, uint8_t rx_len);
 int spiBurstnoPrint();

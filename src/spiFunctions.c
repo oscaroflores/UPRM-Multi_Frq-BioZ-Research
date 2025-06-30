@@ -236,7 +236,7 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits)
   regWrite(regAddr, newBits);
 }
 
-int spiBurst()
+int spiBurst(double freqLogged)
 {
   uint8_t regAddr = 0x0C;
   int err = 0;
@@ -272,10 +272,6 @@ int spiBurst()
     return err;
   }
 
-  // Define these here
-  uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
-  int sample_index = 0;
-
   for (int i = 0; i < fifoCount; i++)
   {
     if (rx_buf[i] != 0)
@@ -295,10 +291,7 @@ int spiBurst()
         gHold[5] = rx_buf[i + 2];
         i += 2;
 
-        uint32_t this_sample_ts =
-            burst_timestamp - (sample_interval_us * sample_index++);
-
-        calcBioZ(gHold, this_sample_ts);
+        calcBioZ(gHold, freqLogged);
       }
     }
   }
@@ -342,10 +335,6 @@ int spiBurstnoPrint()
     return err;
   }
 
-  // Define these here
-  uint32_t burst_timestamp = MXC_TMR_GetCount(MXC_TMR0);
-  int sample_index = 0;
-
   for (int i = 0; i < fifoCount; i++)
   {
     if (rx_buf[i] != 0)
@@ -364,9 +353,6 @@ int spiBurstnoPrint()
         gHold[4] = rx_buf[i + 1];
         gHold[5] = rx_buf[i + 2];
         i += 2;
-
-        uint32_t this_sample_ts =
-            burst_timestamp - (sample_interval_us * sample_index++);
       }
     }
   }

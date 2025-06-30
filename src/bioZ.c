@@ -29,11 +29,20 @@ extern uint8_t IMag;
 extern int count;
 extern int errCnt;
 
-// sample interval
+// Globals
 uint32_t sample_interval_us = 0; // make accessible from main if needed
 uint32_t sample_index = 0;       // Declare as global variable
-// uint32_t sr_bioz ;
+double sr_bioz;
+double bioz_adc_osr;
+double ndiv;
 
+/**
+ * @brief Change M divider value.
+ *
+ * @param val The value to set for the M divider.
+ *
+ * This function changes the M divider value, which spans over two separate registers.
+ */
 void setMdiv(int val)
 {
   /*
@@ -51,7 +60,17 @@ void setMdiv(int val)
   changeReg(0x17, a, 7, 2); // step 3:
   changeReg(0x18, b, 7, 8); // MDIV
 }
-void SFBIAsettings()
+
+/**
+ * @brief Configure the BioZ BIA settings for the MAX30009.
+ *
+ * This function initializes the BioZ BIA settings by configuring various registers
+ * to set up the device for BioZ measurements. It includes PLL, clock, gain setup,
+ * basic sensor/AFE configuration, interrupt setup, and DAC/ADC OSR configuration.
+ * It also clears the status register and brings the device out of shutdown.
+ * It must be called before starting any BioZ measurements.
+ */
+void BIAsettings()
 {
   // --- Reset and bring device out of shutdown ---
   regWrite(0x20, 1 << 2); // BIOZ_BG_EN
@@ -102,6 +121,15 @@ void SFBIAsettings()
   setMdiv(512);
 }
 
+/**
+ * @brief Get the reference clock frequency in Hz.
+ *
+ * This function determines the reference clock frequency based on the
+ * settings in the MAX30009 registers. It checks the reference clock selection
+ * and clock frequency selection bits to return the appropriate frequency.
+ *
+ * @return The reference clock frequency in Hz.
+ */
 uint32_t getRefClkHz()
 {
 
@@ -120,9 +148,15 @@ uint32_t getRefClkHz()
     return (clk_freq_sel == 0) ? 32000 : 32768;
   }
 }
-double sr_bioz;
-double bioz_adc_osr;
-double ndiv;
+
+/**
+ * @brief Get the sample interval in seconds.
+ *
+ * This function calculates the sample interval based on the reference clock frequency,
+ * M divider, N divider, and ADC oversampling rate.
+ *
+ * @return The sample interval in seconds.
+ */
 double getSampleInterval()
 {
   uint32_t ref_clk = getRefClkHz();
@@ -151,6 +185,14 @@ double getSampleInterval()
   return 1 / sr_bioz;
 }
 
+/**
+ * @brief Get the DAC oversampling rate.
+ *
+ * This function reads the DAC oversampling rate from the MAX30009 registers.
+ * It returns the oversampling rate in terms of samples per second.
+ * The possible values are 32, 64, 128, or 256.
+ * @return The DAC oversampling rate in samples per second.
+ */
 int getDACOSR()
 {
   uint8_t val = (regRead(0x20) & 0b11000000) >> 6;
@@ -168,6 +210,15 @@ int getDACOSR()
     return 32; // fallback
   }
 }
+
+/**
+ * @brief Get the K divider value.
+ *
+ * This function reads the K divider value from the MAX30009 registers.
+ * The K divider is used to set the frequency of the BioZ signal.
+ *
+ * @return The K divider value.
+ */
 int getKDiv()
 {
   /*
@@ -186,9 +237,18 @@ int getKDiv()
     return 8192;
   }
 }
+
+/**
+ * @brief Get the BioZ gain value.
+ *
+ * This function reads the BioZ gain setting from the MAX30009 registers.
+ * It returns the gain factor based on the bits set in the register.
+ *
+ * @return The BioZ gain factor.
+ */
 double getBiozGain()
 {
-  uint8_t reg_val = regRead(0x23);    // If your doc says 0x24, change this
+  uint8_t reg_val = regRead(0x24);    // If your doc says 0x24, change this
   uint8_t gain_bits = reg_val & 0x03; // Bits [1:0]
 
   switch (gain_bits)
@@ -206,6 +266,16 @@ double getBiozGain()
     return -1.0;
   }
 }
+
+/**
+ * @brief Get the BioZ current in microamperes.
+ *
+ * This function reads the BioZ current settings from the MAX30009 registers
+ * and calculates the current in microamperes based on the VDRV_MAG and IDRV_RGE settings.
+ * It uses predefined values for VDRV_MAG and IDRV_RGE to compute the current.
+ *
+ * @return The BioZ current in microamperes (µA).
+ */
 double getBiozCurrent_uA()
 {
   uint8_t reg_val = regRead(0x22);
@@ -224,22 +294,34 @@ double getBiozCurrent_uA()
   double i_amperes = vdrv_volts / r; // I = V / R
   return (i_amperes * 1e6);          // return µA
 }
+
+/**
+ * @brief Set the frequency for BioZ signal generation.
+ *
+ * This function configures the frequency-specific settings for BioZ signal generation.
+ * It supports two frequencies: 4 kHz and 131 kHz.
+ *
+ * @param freq The frequency to set:
+ *             0 for 4 kHz, 1 for 131 kHz.
+ *
+ * @note Only supports 4kHz and 131 kHz. Refactoring necessary for other frequencies.
+ */
 void setFreq(int freq)
 {
   /*
   Configures frequency-specific settings for BioZ signal generation
-  Supports: 5 (kHz), 150 (kHz)
+  Supports: 4kHz and 131khz
   */
 
   switch (freq)
   {
   case 0:
-    changeReg(0x17, 5, 4, 4); // k_div = 32, 5kHz
+    changeReg(0x17, 5, 4, 4); // k_div = 32, 4kHz
 
     break;
 
   case 1:
-    changeReg(0x17, 0, 4, 4); // k_div = 1, 150kHz
+    changeReg(0x17, 0, 4, 4); // k_div = 1, 131kHz
 
     break;
 
@@ -248,6 +330,37 @@ void setFreq(int freq)
     break;
   }
 }
+int getMdiv(void)
+{
+  int mdiv_high = (regRead(0x17) >> 6) & 0x03;
+  int mdiv_low = regRead(0x18);
+  return (mdiv_high << 8) | mdiv_low;
+}
+double getPllClk(void)
+{
+  int M = getMdiv(); // Uses your getMdiv() function
+  return getRefClkHz() * (M + 1);
+}
+
+double getBiozFreq(void)
+{
+  int M = getMdiv();
+  double PLL_CLK = getRefClkHz() * (M + 1);
+  return PLL_CLK / (getKDiv() * getDACOSR());
+}
+
+/**
+ * @brief Convert ADC counts to resistance in Ohms.
+ *
+ * @param count The ADC count value to convert.
+ *
+ * This function converts the ADC counts from the BioZ measurement
+ * to resistance in Ohms using the formula:
+ *
+ * R = (count * V_REF) / (ADC_FS * gain * (2/π) * I)
+ *
+ * @return The calculated resistance in Ohms.
+ */
 double convertCountsToOhms(double count)
 {
   const double V_REF = 1.0;
@@ -266,13 +379,26 @@ double convertCountsToOhms(double count)
   return (count * V_REF) / (ADC_FS * gain * TWO_OVER_PI * i_mag);
 }
 
-int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused)
+/**
+ * @brief Calculate BioZ impedance from FIFO data.
+ *
+ * @param buf The buffer containing the FIFO data.
+ *
+ * This function processes the FIFO data buffer to extract
+ * the in-phase (I) and quadrature (Q) components of the BioZ signal.
+ * It determines which data array corresponds to the
+ * in-phase and quadrature components based on the first byte of each array.
+ * It then converts the ADC counts to resistance in Ohms
+ * and calculates the timestamp for the sample.
+ *
+ * @return 0 on success, 1 for invalid data, 2 for marker, or 3 for error.
+ */
+int calcBioZ(uint8_t buf[], double freqLogged)
 {
   /*
   This function uses the readings from the FIFO register
   */
 
-  // sample_index persists as a global variable
   uint8_t x1[3], x2[3];
   int i, err = 0;
 
@@ -364,18 +490,11 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused)
   uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3)); // in miliseconds
   sample_index++;                                                          // Increment sample index for next sample timestamp
 
-  // Calculate M divider value from registers 0x17 and 0x18
-  int mdiv_high = (regRead(0x17) >> 6) & 0x03;
-  int mdiv_low = regRead(0x18);
-  int M = (mdiv_high << 8) | mdiv_low;
-
-  double PLL_CLK = getRefClkHz() * (M + 1);            // Calculate PLL clock frequency
-  double F_BIOZ = PLL_CLK / (getKDiv() * getDACOSR()); // Calculate BioZ frequency
-
   // Convert to Ohms
   double I_ohm = convertCountsToOhms(I);
   double Q_ohm = convertCountsToOhms(Q);
-
+  double phase_rad = atan2(Q_ohm, I_ohm);
+  double phase_deg = phase_rad * (180.0 / M_PI);
   // Debugging prints
 
   // printf("M Divider: %d\n", M);
@@ -391,15 +510,16 @@ int calcBioZ(uint8_t buf[], uint32_t timestamp_us_unused)
   // printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
   // printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
 
-  // -- Print the results --
+  // -- Print the results to terminal --
   printf("%lu\t", timestamp);
   printf("%.1f\t", Q_ohm);
   printf("%.1f\t", I_ohm);
-  printf("%.1f\n", F_BIOZ);
+  printf("%.1f\t", freqLogged);
+  printf("phase: %f\n", phase_deg);
 
   // SD card upload
   char log_entry[128];
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, freqLogged);
 
   if (log_len < 0 || log_len >= sizeof(log_entry))
   {

@@ -1,27 +1,29 @@
-C:/Users/orale/Desktop/Projects/UPRM-Multi_Frq-BioZ-Research/build/Fat32Driver/ff.o: \
- source/ff.c C:/ArmGCC/arm-none-eabi/include/string.h \
- C:/ArmGCC/arm-none-eabi/include/_ansi.h \
- C:/ArmGCC/arm-none-eabi/include/newlib.h \
- C:/ArmGCC/arm-none-eabi/include/_newlib_version.h \
- C:/ArmGCC/arm-none-eabi/include/sys/config.h \
- C:/ArmGCC/arm-none-eabi/include/machine/ieeefp.h \
- C:/ArmGCC/arm-none-eabi/include/sys/features.h \
- C:/ArmGCC/arm-none-eabi/include/sys/reent.h \
- C:/ArmGCC/arm-none-eabi/include/_ansi.h \
- C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stddef.h \
- C:/ArmGCC/arm-none-eabi/include/sys/cdefs.h \
- C:/ArmGCC/arm-none-eabi/include/machine/_default_types.h \
- C:/ArmGCC/arm-none-eabi/include/sys/_types.h \
- C:/ArmGCC/arm-none-eabi/include/machine/_types.h \
- C:/ArmGCC/arm-none-eabi/include/sys/lock.h \
- C:/ArmGCC/arm-none-eabi/include/sys/_locale.h \
- C:/ArmGCC/arm-none-eabi/include/strings.h \
- C:/ArmGCC/arm-none-eabi/include/sys/string.h source/ff.h \
- C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
- C:/ArmGCC/lib/gcc/arm-none-eabi/14.2.1/include/stdint.h \
- C:/ArmGCC/arm-none-eabi/include/stdint.h \
- C:/ArmGCC/arm-none-eabi/include/sys/_intsup.h \
- C:/ArmGCC/arm-none-eabi/include/sys/_stdint.h source/diskio.h \
+C:/Users/ricardo.blanco1/Projects/UPRM-Multi_Frq-BioZ-Research/build/Fat32Driver/ff.o: \
+ source/ff.c \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\string.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\_ansi.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\newlib.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\_newlib_version.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\config.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\ieeefp.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\features.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\reent.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\_ansi.h \
+ c:\maximsdk\tools\gnutools\10.3\lib\gcc\arm-none-eabi\10.3.1\include\stddef.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\_types.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\_types.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\_default_types.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\lock.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\cdefs.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\_locale.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\strings.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\string.h \
+ source/ff.h C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
+ c:\maximsdk\tools\gnutools\10.3\lib\gcc\arm-none-eabi\10.3.1\include\stdint.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdint.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\_intsup.h \
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\_stdint.h \
+ source/diskio.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/max32655.h \

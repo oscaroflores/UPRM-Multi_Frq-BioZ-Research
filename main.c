@@ -42,7 +42,7 @@ vital signs depending on necessities
 #define SPI_IRQ SPI1_IRQn
 
 /***** Globals *****/
-int current_freq = 0;
+bool current_freq = 0;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
@@ -90,7 +90,7 @@ void sensorISR(void *unused)
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_25); // Clear interrupt
   regRead(0x00);
 
-  if (samples_discarded < 4)
+  if (samples_discarded < 7)
   {
     samples_discarded++;
     sample_index++;
@@ -101,18 +101,11 @@ void sensorISR(void *unused)
   {
 
     // uint32_t t_start = MXC_TMR_GetCount(MXC_TMR1);
-
-    spiBurst(); // Time this
+    double freqLogged = getBiozFreq();
+    spiBurst(freqLogged); // Time this
 
     // Alternate frequency AFTER processing the current burst
-    if (current_freq == 0)
-    {
-      current_freq = 1;
-    }
-    else
-    {
-      current_freq = 0;
-    }
+    current_freq = !current_freq;
     setFreq(current_freq);
 
     // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
@@ -155,7 +148,7 @@ int main(void)
     return err;
   }
   initSPI();             // Setup SPI
-  SFBIAsettings();       // Set up correct sensor registers for SFBIA
+  BIAsettings();         // Set up correct sensor registers for SFBIA
   setFreq(current_freq); // Set frequency to 150 kHz
   setupButtonInterrupt();
   setupMax30009Interrupt();

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="00d15e3a-6af8-428a-b4a6-7ef091deda13" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/BioZApp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/FAT32.a" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/FAT32.a" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ar_args.txt" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ar_args.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/board.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/board.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/board.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/board.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/diskio.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/diskio.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/diskio.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/diskio.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ff.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ff.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ff.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ff.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ffsystem.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ffsystem.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ffsystem.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ffsystem.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ffunicode.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ffunicode.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/ffunicode.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/ffunicode.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/led.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/led.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/led.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/led.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/max20303.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/max20303.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/max20303.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/max20303.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/pb.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/pb.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/pb.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/pb.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/stdio.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/stdio.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/stdio.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/stdio.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/w25.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/w25.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/Fat32Driver/w25.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/Fat32Driver/w25.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/MAX30009.d" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/MAX30009.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/ar_args.txt" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/ar_args.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/board.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/board.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/board.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/board.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/led.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/led.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/led.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/led.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/max20303.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/max20303.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/max20303.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/max20303.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/pb.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/pb.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/pb.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/pb.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/sdhc.a" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/sdhc.a" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/stdio.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/stdio.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/stdio.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/stdio.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/w25.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/w25.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/SDHCDriver/w25.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/SDHCDriver/w25.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/UPRM-Multi_Frq-BioZ-Research.elf" beforeDir="false" afterPath="$PROJECT_DIR$/build/UPRM-Multi_Frq-BioZ-Research.elf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/UPRM-Multi_Frq-BioZ-Research.map" beforeDir="false" afterPath="$PROJECT_DIR$/build/UPRM-Multi_Frq-BioZ-Research.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/_empty_tmp_file.c" beforeDir="false" afterPath="$PROJECT_DIR$/build/_empty_tmp_file.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/bioZ.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/bioZ.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/board.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/board.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/board.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/board.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/cli.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/cli.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/cli.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/cli.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/heap.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/heap.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/heap.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/heap.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/led.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/led.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/led.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/led.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/ln_args.txt" beforeDir="false" afterPath="$PROJECT_DIR$/build/ln_args.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/main.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/main.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/max20303.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/max20303.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/max20303.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/max20303.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/pb.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/pb.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/pb.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/pb.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/project_defines.h" beforeDir="false" afterPath="$PROJECT_DIR$/build/project_defines.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/sdhc.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/sdhc.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/spiFunctions.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/spiFunctions.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/startup_max32655.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/startup_max32655.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/stdio.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/stdio.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/stdio.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/stdio.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/system_max32655.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/system_max32655.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/system_max32655.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/system_max32655.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/user-cli.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/user-cli.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/w25.d" beforeDir="false" afterPath="$PROJECT_DIR$/build/w25.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/w25.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/w25.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flash.log" beforeDir="false" afterPath="$PROJECT_DIR$/flash.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/MAX30009.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/MAX30009.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/bioZ.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/bioZ.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/matlab/GraphingScript.m" beforeDir="false" afterPath="$PROJECT_DIR$/matlab/GraphingScript.m" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAX30009.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bioZ.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/bioZ.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/sdhc.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/sdhc.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/spiFunctions.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/spiFunctions.c" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="2yx8sqXHu8TXGbfRVthKREVmSLK" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-fc1d50d2d915-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.24978.54" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="00d15e3a-6af8-428a-b4a6-7ef091deda13" name="Changes" comment="" />
+      <created>1750765074262</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1750765074262</updated>
+    </task>
+    <servers />
+  </component>
+</project>

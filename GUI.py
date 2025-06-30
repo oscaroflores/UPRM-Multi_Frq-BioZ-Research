@@ -1,5 +1,6 @@
 import sys
 import time
+import math
 import serial
 import serial.tools.list_ports
 import threading
@@ -12,7 +13,6 @@ class SerialPlotter(QtWidgets.QWidget):
         super().__init__()
         self.setWindowTitle("Real-Time Dual-Frequency BioZ Plotter")
 
-        # Layouts
         main_layout = QtWidgets.QVBoxLayout(self)
         control_layout = QtWidgets.QHBoxLayout()
         slider_layout = QtWidgets.QHBoxLayout()
@@ -155,12 +155,11 @@ class SerialPlotter(QtWidgets.QWidget):
                 try:
                     filename = time.strftime("bioz_log_%Y%m%d_%H%M%S.csv")
                     self.log_file = open(filename, "w")
-                    self.log_file.write("timestamp,Q,I,F\n")
+                    self.log_file.write("timestamp,Q,I,F,phase_deg\n")
                 except Exception as e:
                     QtWidgets.QMessageBox.critical(self, "Logging Error", str(e))
                     return
 
-            # Send current timestamp to firmware
             from datetime import datetime
             now = datetime.now()
             timestamp_str = now.strftime("start %Y-%m-%d %H:%M:%S\r\n")
@@ -212,10 +211,14 @@ class SerialPlotter(QtWidgets.QWidget):
                 if freq not in self.freqs:
                     continue
 
-                self.pending_data[freq].append((timestamp, q_raw, i_raw))
+                # Calculate phase in degrees
+                phase_rad = math.atan2(q_raw, i_raw)
+                phase_deg = phase_rad * (180.0 / math.pi)
+
+                self.pending_data[freq].append((timestamp, q_raw, i_raw, phase_deg))
 
                 if self.log_file:
-                    self.log_file.write(f"{timestamp},{q_raw},{i_raw},{freq}\n")
+                    self.log_file.write(f"{timestamp},{q_raw},{i_raw},{freq},{phase_deg:.2f}\n")
 
             except Exception as e:
                 print("Serial read error:", e)
@@ -227,7 +230,7 @@ class SerialPlotter(QtWidgets.QWidget):
             if not updates:
                 continue
 
-            for timestamp, q, i in updates:
+            for timestamp, q, i, _ in updates:
                 self.x_data[freq].append(timestamp)
                 self.q_data[freq].append(q)
                 self.i_data[freq].append(i)

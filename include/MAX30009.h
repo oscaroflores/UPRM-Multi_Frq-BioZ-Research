@@ -41,9 +41,7 @@
 /*
 Added by me:
 **************************************************************/
-void init();
-void MAX30009onAfeInt();
-#define NUM_SAMPLES_PER_INT                                                    \
+#define NUM_SAMPLES_PER_INT \
   2 /* number of samples in FIFO that generates a FIFO_A_FULL interrupt */
 #define NUM_BYTES_PER_SAMPLE 3
 #define NUM_ADC 6 /* number of ADCs in the MAX30009 */

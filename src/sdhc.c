@@ -435,13 +435,24 @@ int createNextBiozLogFile()
     time_t rawtime = sec;
     struct tm *timeinfo = localtime(&rawtime);
 
-    snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%d%s",
+    snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%02d%02d%02d%s",
              file_prefix,
              timeinfo->tm_year + 1900,
              timeinfo->tm_mon + 1,
              timeinfo->tm_mday,
-             next_n,
-             file_extension);
+             timeinfo->tm_hour,
+             timeinfo->tm_min,
+             timeinfo->tm_sec,
+             file_extension);snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%02d%02d%02d%s",
+         file_prefix,
+         timeinfo->tm_year + 1900,
+         timeinfo->tm_mon + 1,
+         timeinfo->tm_mday,
+         timeinfo->tm_hour,
+         timeinfo->tm_min,
+         timeinfo->tm_sec,
+         file_extension);
+
 
     snprintf(new_log_file, MAXLEN, "%s", temp_filename); // Save to global file path
     // printf("Log file created: %s\n", new_log_file);      // <-- ADD THIS LINE
