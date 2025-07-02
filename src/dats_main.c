@@ -23,7 +23,8 @@
  *  limitations under the License.
  */
 /*************************************************************************************************/
-
+#include "cli.h"
+#include <stdio.h>
 #include <string.h>
 #include "wsf_types.h"
 #include "util/bstream.h"
@@ -53,7 +54,7 @@
 #include "pal_uart.h"
 #include "tmr.h"
 #include "svc_sds.h"
-
+#include "user-cli.h"
 /**************************************************************************************************
   Macros
 **************************************************************************************************/
@@ -132,6 +133,7 @@ static const appSecCfg_t datsSecCfg = {
 
 /*! TRUE if Out-of-band pairing data is to be sent */
 static const bool_t datsSendOobData = FALSE;
+volatile bool_t measurementStartRequested = FALSE;
 
 /* OOB Connection identifier */
 dmConnId_t oobConnId;
@@ -248,7 +250,8 @@ static dmSecLescOobCfg_t *datsOobCfg;
 
 /* Timer for trimming of the 32 kHz crystal */
 wsfTimer_t trimTimer;
-
+extern int handle_start(int argc, char *argv[]);
+extern int handle_stop(int argc, char *argv[]);
 extern void setAdvTxPower(void);
 
 /*************************************************************************************************/
@@ -441,11 +444,78 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
 
     if (len < 64)
     {
-        /* print received data if not a speed test message */
-        APP_TRACE_INFO0((const char *)pValue);
+        char msg[64];
+        memcpy(msg, pValue, len);
+        msg[len] = '\0';
 
-        /* send back some data */
-        datsSendData(connId);
+        APP_TRACE_INFO1("BLE msg len: %d", len);
+        for (int i = 0; i < len; i++)
+        {
+            APP_TRACE_INFO3("byte[%d] = 0x%02X ('%c')", i, pValue[i], pValue[i]);
+        }
+
+        APP_TRACE_INFO1("BLE cmd: '%s'", msg);
+
+        if (strcmp(msg, "start") == 0 || strcmp(msg, "start\r\n") == 0)
+        {
+            // Default start
+            char *argv[1] = {"start"};
+            int err = handle_start(1, argv);
+            if (err == E_NO_ERROR)
+                APP_TRACE_INFO0("Default start success.");
+            else
+                APP_TRACE_ERR1("Default start failed with code %d", err);
+        }
+        else if (strncmp(msg, "start@", 6) == 0)
+        {
+            // BLE-safe compact format: start@YYMMDD@HHMMSS
+            char *token1 = strtok(msg, "@");  // "start"
+            char *token2 = strtok(NULL, "@"); // date
+            char *token3 = strtok(NULL, "@"); // time
+
+            if (token1 && token2 && token3)
+            {
+                int year, month, day, hour, min, sec;
+
+                if (sscanf(token2, "%4d%2d%2d", &year, &month, &day) == 3 &&
+                    sscanf(token3, "%2d%2d%2d", &hour, &min, &sec) == 3)
+                {
+                    printf("Parsed datetime: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hour, min, sec);
+
+                    char dateStr[16];
+                    char timeStr[16];
+                    snprintf(dateStr, sizeof(dateStr), "%04d-%02d-%02d", year, month, day);
+                    snprintf(timeStr, sizeof(timeStr), "%02d-%02d-%02d", hour, min, sec);
+
+                    char *argv[3] = {"start", dateStr, timeStr};
+                    int err = handle_start(3, argv);
+                    if (err == E_NO_ERROR)
+                        APP_TRACE_INFO0("Formatted start success.");
+                    else
+                        APP_TRACE_ERR1("Formatted start failed with code %d", err);
+                }
+                else
+                {
+                    APP_TRACE_ERR0("Failed to parse compact date/time.");
+                }
+            }
+            else
+            {
+                APP_TRACE_ERR0("Bad format. Use: start@YYMMDD@HHMMSS");
+            }
+        }
+        else if (strcmp(msg, "stop") == 0)
+        {
+            char *argv[] = {"stop"};
+            int argc = 1;
+            int err = handle_stop(argc, argv);
+            if (err == E_NO_ERROR)
+                printf("Stop command executed successfully.\n");
+            else
+                printf("Stop failed: %d\n", err);
+        }
+
+        datsSendData(connId); // Optional echo
     }
     else
     {
@@ -455,6 +525,7 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
             packetCount = 0;
         }
     }
+
     return ATT_SUCCESS;
 }
 

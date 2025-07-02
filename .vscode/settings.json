@@ -98,6 +98,7 @@
     "ff.h": "c",
     "lfs.h": "c",
     "cli.h": "c",
-    "time.h": "c"
+    "time.h": "c",
+    "pwrseq_regs.h": "c"
   }
 }

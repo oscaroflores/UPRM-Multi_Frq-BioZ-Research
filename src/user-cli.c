@@ -162,19 +162,27 @@ int handle_unmount(int argc, char *argv[])
 }
 int handle_start(int argc, char *argv[])
 {
-  if (argc != 3)
+  int year = 1970, month = 1, day = 1;
+  int hour = 0, min = 0, sec = 0;
+
+  if (argc == 3)
   {
-    printf("Usage: start YYYY-MM-DD HH:MM:SS\n");
-    return E_INVALID;
+    char datetime_str[32];
+    snprintf(datetime_str, sizeof(datetime_str), "%s %s", argv[1], argv[2]);
+
+    if (sscanf(datetime_str, "%d-%d-%d %d-%d-%d", &year, &month, &day, &hour, &min, &sec) != 6)
+    {
+      printf("Invalid datetime format.\n");
+      return E_INVALID;
+    }
   }
-
-  int year, month, day, hour, min, sec;
-  char datetime_str[32];
-  snprintf(datetime_str, sizeof(datetime_str), "%s %s", argv[1], argv[2]);
-
-  if (sscanf(datetime_str, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &min, &sec) != 6)
+  else if (argc == 1)
   {
-    printf("Invalid datetime format.\n");
+    // printf("Default start: setting RTC to 1970-01-01 00:00:00\n");
+  }
+  else
+  {
+    printf("Usage: start [YYYY-MM-DD HH-MM-SS]\n");
     return E_INVALID;
   }
 
@@ -193,9 +201,7 @@ int handle_start(int argc, char *argv[])
     return E_INVALID;
   }
 
-  // printf("Setting RTC to: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hour, min, sec);
-
-  MXC_RTC_Stop(); // Just in case it's already running
+  MXC_RTC_Stop();
 
   if (MXC_RTC_Init((uint32_t)rawtime, 0) != E_NO_ERROR)
   {
@@ -203,26 +209,23 @@ int handle_start(int argc, char *argv[])
     return E_UNKNOWN;
   }
 
-  // Wait for RTC to become ready (needed on some MAX32655 silicon revs)
-  MXC_Delay(MSEC(10)); // Allow time for the RTC to start ticking
+  MXC_Delay(MSEC(10));
 
   if (MXC_RTC_Start() != E_NO_ERROR)
   {
     printf("RTC start failed!\n");
     return E_UNKNOWN;
   }
-  // printf("RTC CTRL: 0x%08lx\n", MXC_RTC->ctrl);
 
-  // Small delay after start (not always necessary but safe)
   MXC_Delay(MSEC(10));
 
-  // Confirm RTC is ticking
-  uint32_t sec_read, subsec;
+  uint32_t sec_read;
   if (MXC_RTC_GetSeconds(&sec_read) != E_NO_ERROR)
   {
     printf("RTC read failed!\n");
     return E_UNKNOWN;
   }
+
   // printf("RTC started at UNIX time: %lu\n", sec_read);
 
   sample_index = 0;

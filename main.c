@@ -86,6 +86,7 @@ bool current_freq = 0;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
+bool interrupt = 0;
 extern uint32_t sample_interval_us;
 extern sample_index;
 int samples_discarded;
@@ -220,18 +221,21 @@ void sensorISR(void *unused)
 
   if (samples_discarded < 7)
   {
-    samples_discarded++;
-    sample_index++;
-    spiBurstnoPrint(); // Read the FIFO, but don't print anything
+    interrupt = 1; // Set interrupt flag to indicate that a sample was discarded
+    // samples_discarded++;
+    // sample_index++;
+    // spiBurstnoPrint(); // Read the FIFO, but don't print anything
     // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
     // uint32_t delta = t_end - t_start;
     // printf("spiBurst took %lu cycles\n", delta);
 
     // printf("discarded = %d\n", samples_discarded);
+    // interrupt = 0;
   }
   else
   {
     sample_ready = 1;
+    interrupt = 1;
     // double freqLogged = getBiozFreq();
     // spiBurst(freqLogged); // Time this
 
@@ -391,26 +395,34 @@ int main(void)
     WsfTimerSleepUpdate();
 
     wsfOsDispatcher();
-    if (sample_ready)
+    if (interrupt)
     {
-      double freqLogged = getBiozFreq();
-      spiBurst(freqLogged); // Time this
+      if (sample_ready)
+      {
+        sample_ready = 0;
+        spiBurst(getBiozFreq());
+        current_freq = !current_freq;
+        setFreq(current_freq);
+        interrupt = 0;
+      }
+      else
+      {
+        sample_index++;
+        samples_discarded++;
+        spiBurstnoPrint();
+        interrupt = 0;
+      }
+      // uint32_t now = MXC_TMR_GetCount(MXC_TMR1);
+      // uint32_t delta = now - last_call;
+      // printf("Time since last dispatcher: %lu cycles\n", delta);
+      // last_call = now;
 
-      // Alternate frequency AFTER processing the current burst
-      current_freq = !current_freq;
-      setFreq(current_freq);
-      sample_ready = 0;
-    }
-    // uint32_t now = MXC_TMR_GetCount(MXC_TMR1);
-    // uint32_t delta = now - last_call;
-    // printf("Time since last dispatcher: %lu cycles\n", delta);
-    // last_call = now;
+      wsfOsDispatcher();
 
-    wsfOsDispatcher();
-
-    if (!WsfOsActive())
-    {
-      WsfTimerSleep();
+      if (!WsfOsActive())
+      {
+        WsfTimerSleep();
+      }
     }
   }
   printf("error count = %d\n", errCnt);

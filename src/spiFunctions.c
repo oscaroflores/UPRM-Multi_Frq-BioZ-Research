@@ -101,7 +101,7 @@ uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
 
 
   */
-  MXC_Delay(MXC_DELAY_USEC(100));
+  MXC_Delay(MXC_DELAY_USEC(75));
 
   int err;
 

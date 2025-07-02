@@ -519,8 +519,8 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   printf("%lu\t", timestamp);
   printf("%.1f\t", Q_ohm);
   printf("%.1f\t", I_ohm);
-  printf("%.1f\t", F_BIOZ);
-  printf("%d\n", regRead(0x0A) & 0x80);
+  printf("%.1f\n", F_BIOZ);
+  // printf("%d\n", regRead(0x0A) & 0x80);
   // printf("phase: %f\n", phase_deg);
 
   // SD card upload
