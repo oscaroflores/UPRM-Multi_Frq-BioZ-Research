@@ -218,35 +218,11 @@ void sensorISR(void *unused)
 
   regRead(0x00);
   // uint32_t t_start = MXC_TMR_GetCount(MXC_TMR1);
+  interrupt = 1; // Set interrupt flag to indicate that a sample was discarded
 
-  if (samples_discarded < 7)
-  {
-    interrupt = 1; // Set interrupt flag to indicate that a sample was discarded
-    // samples_discarded++;
-    // sample_index++;
-    // spiBurstnoPrint(); // Read the FIFO, but don't print anything
-    // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
-    // uint32_t delta = t_end - t_start;
-    // printf("spiBurst took %lu cycles\n", delta);
-
-    // printf("discarded = %d\n", samples_discarded);
-    // interrupt = 0;
-  }
-  else
+  if (samples_discarded == 7)
   {
     sample_ready = 1;
-    interrupt = 1;
-    // double freqLogged = getBiozFreq();
-    // spiBurst(freqLogged); // Time this
-
-    // // Alternate frequency AFTER processing the current burst
-    // current_freq = !current_freq;
-    // setFreq(current_freq);
-
-    // uint32_t t_end = MXC_TMR_GetCount(MXC_TMR1);
-    // uint32_t delta = t_end - t_start;
-
-    // printf("spiBurst took %lu cycles\n", delta);
     samples_discarded = 0;
   }
 }
@@ -402,22 +378,23 @@ int main(void)
       {
         sample_ready = 0;
         spiBurst(getBiozFreq());
-        uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
-        uint32_t delta = end - start;
+
         current_freq = !current_freq;
         setFreq(current_freq);
         interrupt = 0;
-        printf("time for burst: %lu cycles\n", delta);
+        // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+        // uint32_t delta = end - start;
+        // printf("time for burst: %lu cycles\n", delta);
       }
       else
       {
         sample_index++;
         samples_discarded++;
         spiBurstnoPrint();
-        uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
-        uint32_t delta = end - start;
+        // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+        // uint32_t delta = end - start;
         interrupt = 0;
-        printf("time for discarded burst: %lu cycles\n", delta);
+        // printf("time for discarded burst: %lu cycles\n", delta);
       }
       // uint32_t now = MXC_TMR_GetCount(MXC_TMR1);
       // uint32_t delta = now - last_call;
