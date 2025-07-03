@@ -99,6 +99,7 @@
     "lfs.h": "c",
     "cli.h": "c",
     "time.h": "c",
-    "pwrseq_regs.h": "c"
+    "pwrseq_regs.h": "c",
+    "att_defs.h": "c"
   }
 }

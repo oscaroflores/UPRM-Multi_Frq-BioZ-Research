@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "rtc.h"
+#include "att_api.h"
+#include "dats_api.h"
+#include "app_api.h"
 uint32_t start_time_ms;
 
 extern int current_freq_kHz;
@@ -35,7 +38,6 @@ uint32_t sample_index = 0;       // Declare as global variable
 double sr_bioz;
 double bioz_adc_osr;
 double ndiv;
-
 /**
  * @brief Change M divider value.
  *
@@ -539,6 +541,6 @@ int calcBioZ(uint8_t buf[], double freqLogged)
     printf("Write failed: %s\n", FF_ERRORS[err]);
     return err;
   }
-
+  datsSendData(AppConnIsOpen(), log_entry, log_len); // BLE
   return err;
 }

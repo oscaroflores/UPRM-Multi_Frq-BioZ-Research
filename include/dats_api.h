@@ -28,7 +28,7 @@
 #define EXAMPLES_MAX32655_BLUETOOTH_BLE_DATS_DATS_API_H_
 
 #include "wsf_os.h"
-
+#include "dm_api.h"
 #ifdef __cplusplus
 extern "C"
 {
@@ -68,7 +68,7 @@ extern "C"
    */
   /*************************************************************************************************/
   void DatsHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg);
-
+  void datsSendData(dmConnId_t connId, const char *log_entry, uint16_t log_len);
 #ifdef __cplusplus
 };
 #endif

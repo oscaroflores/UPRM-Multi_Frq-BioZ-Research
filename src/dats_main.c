@@ -280,14 +280,12 @@ void oobRxCback(void)
  *  \return None.
  */
 /*************************************************************************************************/
-static void datsSendData(dmConnId_t connId)
+void datsSendData(dmConnId_t connId, const char *log_entry, uint16_t log_len)
 {
-    uint8_t str[] = "hello back";
-
     if (AttsCccEnabled(connId, DATS_WP_DAT_CCC_IDX))
     {
         /* send notification */
-        AttsHandleValueNtf(connId, WP_DAT_HDL, sizeof(str), str);
+        AttsHandleValueNtf(connId, WP_DAT_HDL, log_len, (const uint8_t *)log_entry);
     }
 }
 
@@ -515,7 +513,7 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
                 printf("Stop failed: %d\n", err);
         }
 
-        datsSendData(connId); // Optional echo
+        // datsSendData(connId); // Optional echo
     }
     else
     {

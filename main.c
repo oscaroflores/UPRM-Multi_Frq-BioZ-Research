@@ -393,6 +393,7 @@ int main(void)
   while (1)
   {
     WsfTimerSleepUpdate();
+    uint32_t start = MXC_TMR_GetCount(MXC_TMR1);
 
     wsfOsDispatcher();
     if (interrupt)
@@ -401,20 +402,26 @@ int main(void)
       {
         sample_ready = 0;
         spiBurst(getBiozFreq());
+        uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+        uint32_t delta = end - start;
         current_freq = !current_freq;
         setFreq(current_freq);
         interrupt = 0;
+        printf("time for burst: %lu cycles\n", delta);
       }
       else
       {
         sample_index++;
         samples_discarded++;
         spiBurstnoPrint();
+        uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+        uint32_t delta = end - start;
         interrupt = 0;
+        printf("time for discarded burst: %lu cycles\n", delta);
       }
       // uint32_t now = MXC_TMR_GetCount(MXC_TMR1);
       // uint32_t delta = now - last_call;
-      // printf("Time since last dispatcher: %lu cycles\n", delta);
+      // printf("Time since last burst: %lu cycles\n", delta);
       // last_call = now;
 
       wsfOsDispatcher();
