@@ -83,6 +83,7 @@ vital signs depending on necessities
 
 /***** Globals *****/
 bool current_freq = 0;
+volatile bool recording = false;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
@@ -182,14 +183,15 @@ void buttonISR(void *unused)
   // 1. Clear the GPIO interrupt flag
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_2);
 
-  if (regRead(0x20) == 0x00)
+  if (!recording)
   {
-    changeReg(0x20, 0x7, 2, 3);
-    sample_index = 0;
+    datsSendData(AppConnIsOpen(), "startPhys\n", sizeof("startPhys\n") - 1);
+    recording = 1;
   }
   else
   {
-    changeReg(0x20, 0x0, 2, 3);
+    datsSendData(AppConnIsOpen(), "stopPhys\n", sizeof("stopPhys\n") - 1);
+    recording = 0;
   }
 }
 
