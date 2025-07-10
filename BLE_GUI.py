@@ -27,6 +27,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.i_data = {f: [] for f in self.freqs}
         self.pending_data = {f: [] for f in self.freqs}
         self.log_file = None
+        self.recording = False
 
         layout = QtWidgets.QVBoxLayout(self)
 
@@ -176,36 +177,21 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         now = datetime.now()
         msg = now.strftime("start@%Y%m%d@%H%M%S")
         await self.client.write_gatt_char(self.write_char, msg.encode())
+        self.recording = True
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
+
 
     @asyncSlot()
     async def send_stop(self):
         if self.client and self.write_char:
             await self.client.write_gatt_char(self.write_char, b"stop")
+        self.recording = False
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
         if self.log_file:
             self.log_file.close()
             self.log_file = None
-
-
-    def handle_notification(self, _, data):
-        try:
-            line = data.decode("utf-8").strip()
-            parts = line.split(",")
-            if len(parts) != 4:
-                return
-            timestamp, q, i, freq = map(float, parts)
-            freq = int(round(freq))
-            if freq not in self.freqs:
-                return
-            phase = math.atan2(q, i) * 180.0 / math.pi
-            self.pending_data[freq].append((timestamp, q, i, phase))
-            if self.log_file:
-                self.log_file.write(f"{timestamp},{q},{i},{freq},{phase:.2f}\n")
-        except Exception as e:
-            print("[Notify Error]", e)
 
     def update_plots(self):
         for freq in self.freqs:
@@ -233,6 +219,47 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 xmax = self.x_data[freq][-1]
                 self.graphs[idx * 2].setXRange(xmin, xmax, padding=0.01)
                 self.graphs[idx * 2 + 1].setXRange(xmin, xmax, padding=0.01)
+
+    async def debug_start_wrapper(self):
+        print("[DEBUG] Calling send_start() coroutine")
+        await self.send_start()
+        print("[DEBUG] send_start() finished")
+
+    async def debug_stop_wrapper(self):
+        print("[DEBUG] Calling send_stop() coroutine")
+        await self.send_stop()
+        print("[DEBUG] send_stop() finished")
+
+    def handle_notification(self, _, data):
+        try:
+            line = data.decode("utf-8").strip()
+
+            if line == "startPhys":
+                print("[BUTTON] Physical Start Triggered")
+                asyncio.create_task(self.debug_start_wrapper())
+                return
+            elif line == "stopPhys":
+                print("[BUTTON] Physical Stop Triggered")
+                asyncio.create_task(self.debug_stop_wrapper())
+                return
+
+
+
+            # Otherwise treat as normal sample line
+            parts = line.split(",")
+            if len(parts) != 4:
+                return
+            timestamp, q, i, freq = map(float, parts)
+            freq = int(round(freq))
+            if freq not in self.freqs:
+                return
+            phase = math.atan2(q, i) * 180.0 / math.pi
+            self.pending_data[freq].append((timestamp, q, i, phase))
+            if self.log_file:
+                self.log_file.write(f"{timestamp},{q},{i},{freq},{phase:.2f}\n")
+
+        except Exception as e:
+            print("[Notify Error]", e)
 
 
 if __name__ == "__main__":
