@@ -43,7 +43,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.disconnect_button.setEnabled(False)
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(False)
-
+        
         for w in [self.device_box, self.scan_button, self.connect_button, self.disconnect_button,
                   self.start_button, self.stop_button, self.clear_button, self.log_checkbox]:
             control.addWidget(w)
@@ -90,6 +90,8 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_plots)
         self.timer.start(50)
+        asyncio.ensure_future(self.scan_devices())
+
 
     def update_window_size(self, val):
         self.window_size = val
@@ -108,9 +110,11 @@ class BLEBioZPlotter(QtWidgets.QWidget):
     async def scan_devices(self):
         self.devices = await BleakScanner.discover()
         self.device_box.clear()
+        filtered = [d for d in self.devices if d.name and d.name.strip()]
+        self.devices = filtered  # overwrite with filtered list
         for d in self.devices:
-            name = d.name or "Unknown"
-            self.device_box.addItem(f"{name} ({d.address})")
+            self.device_box.addItem(f"{d.name} ({d.address})")
+
 
 
     @asyncSlot()
