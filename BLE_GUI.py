@@ -231,6 +231,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         print("[DEBUG] send_stop() finished")
 
     def handle_notification(self, _, data):
+        # Handle physical button presses
         try:
             line = data.decode("utf-8").strip()
 
@@ -245,7 +246,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
 
 
 
-            # Otherwise treat as normal sample line
+            # handle data in the format: timestamp,q,i,freq
             parts = line.split(",")
             if len(parts) != 4:
                 return

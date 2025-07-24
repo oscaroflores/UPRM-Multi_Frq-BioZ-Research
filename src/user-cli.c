@@ -25,8 +25,8 @@
 #include "sdhc.h"
 #include "user-cli.h"
 #include <stdlib.h>
-#import "time.h"
-#import "rtc.h"
+#include "time.h"
+#include "rtc.h"
 const command_t user_commands[] = {
     {"size", "size", "Find the Size of the SD Card and Free Space",
      handle_size},

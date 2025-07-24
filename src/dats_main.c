@@ -69,6 +69,9 @@
 
 #define TRIM_TIMER_EVT 0x99
 
+#define INIT_SECURITY FALSE
+#define ADV_NAME "DATS"
+
 #define TRIM_TIMER_PERIOD_MS 60000
 
 /*! Button press handling constants */
