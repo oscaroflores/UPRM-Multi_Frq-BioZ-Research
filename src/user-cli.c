@@ -256,3 +256,8 @@ int handle_stop(int argc, char *argv[])
 
   return E_NO_ERROR;
 }
+
+int handle_calib(int argc, char *argv[])
+{
+  changeReg(0x20, 0x7, 2, 3);
+}

@@ -255,6 +255,7 @@ static dmSecLescOobCfg_t *datsOobCfg;
 wsfTimer_t trimTimer;
 extern int handle_start(int argc, char *argv[]);
 extern int handle_stop(int argc, char *argv[]);
+extern int handle_calib(int argc, char *argv[]);
 extern void setAdvTxPower(void);
 
 /*************************************************************************************************/
@@ -514,6 +515,16 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
                 printf("Stop command executed successfully.\n");
             else
                 printf("Stop failed: %d\n", err);
+        }
+        else if (strcmp(msg, "calib"))
+        {
+            char *argv[] = {"calib"};
+            int argc = 1;
+            int err = handle_calib(argc, argv);
+            if (err == E_NO_ERROR)
+                printf("Calibration executed.\n")
+            else
+                printf("Calibration failed: %d\n", err);
         }
 
         // datsSendData(connId); // Optional echo

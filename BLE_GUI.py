@@ -40,13 +40,15 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.stop_button = QtWidgets.QPushButton("Stop")
         self.clear_button = QtWidgets.QPushButton("Clear Plots")
         self.log_checkbox = QtWidgets.QCheckBox("Enable Logging")
+        self.calib_button = QtWidgets.QPushButton("Calibrate")
 
         self.disconnect_button.setEnabled(False)
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(False)
+        self.calib_button.setEnabled(False)
         
         for w in [self.device_box, self.scan_button, self.connect_button, self.disconnect_button,
-                  self.start_button, self.stop_button, self.clear_button, self.log_checkbox]:
+                  self.start_button, self.stop_button, self.clear_button, self.log_checkbox, self.calib_button]:
             control.addWidget(w)
         layout.addLayout(control)
 
@@ -87,6 +89,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.start_button.clicked.connect(self.send_start)
         self.stop_button.clicked.connect(self.send_stop)
         self.clear_button.clicked.connect(self.clear_plots)
+        self.calib_button.clicked.connect(self.calibrate)
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_plots)
@@ -131,6 +134,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
             await self.auto_select_characteristic()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Connect Error", str(e))
+    
     @asyncSlot()
     async def auto_select_characteristic(self):
         try:
@@ -144,6 +148,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                             self.notify_char = char.uuid
                             self.write_char = char.uuid
                             self.start_button.setEnabled(True)
+                            self.calib_button.setEnabled(True)
                             print(f"[Characteristic] Using UUID {char.uuid}")
                             return
                         except Exception as e:
@@ -244,8 +249,6 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 asyncio.create_task(self.debug_stop_wrapper())
                 return
 
-
-
             # handle data in the format: timestamp,q,i,freq
             parts = line.split(",")
             if len(parts) != 4:
@@ -261,6 +264,12 @@ class BLEBioZPlotter(QtWidgets.QWidget):
 
         except Exception as e:
             print("[Notify Error]", e)
+            
+    @asyncSlot()
+    async def calibrate(self):
+        if not self.client or not self.write_char:
+            return
+        await self.client.write_gatt_char(self.write_char, b"calib")
 
 
 if __name__ == "__main__":

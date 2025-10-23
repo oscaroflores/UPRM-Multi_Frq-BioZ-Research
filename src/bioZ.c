@@ -23,6 +23,7 @@
 #include "dats_api.h"
 #include "app_api.h"
 #include "bioZ.h"
+#include <math.h>
 
 #define M_PI 3.14159265358979323846
 
@@ -35,6 +36,7 @@ uint8_t adcQData[10];
 extern uint8_t IMag;
 extern int count;
 extern int errCnt;
+extern int in_calibration; 
 
 // Globals
 uint32_t sample_interval_us = 0; // make accessible from main if needed
@@ -405,6 +407,52 @@ double convertCountsToOhms(double count)
   return (count * V_REF) / (ADC_FS * gain * TWO_OVER_PI * i_mag);
 }
 
+double calibrate()
+{
+  double i_offset;
+  double q_offset;
+  double i_mag_coef;
+  double q_mag_coef;
+  double i_phase_coef;
+  double q_phase_coef;
+
+  // set frequency
+
+  // offsets
+  regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
+  regWrite(0x25, (1 << 5));
+  regWrite(0x20, (1 << 0) | (1 << 1));
+
+  // record data until settled and then record average impedance to i_offset and q_offset
+
+  
+
+  return i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef; 
+}
+
+double calibCounts(double i_count, double q_count, double i_offset, double q_offset, double i_mag_coef, double q_mag_coef, double i_phase_coef, double q_phase_coef)
+{
+  double i;
+  double q;
+
+  // remove offset
+  i = i_count - i_offset;
+  q = q_count - q_offset;
+
+  // correct magnitude and phase delays
+  double i_real = (i / i_mag_coef) * cos(i_phase_coef * (M_PI / 180));
+  double i_imag = (i / i_mag_coef) * sin(i_phase_coef * (M_PI / 180));
+
+  double q_real = (q / q_mag_coef) * sin(q_phase_coef * (M_PI / 180));
+  double q_imag = (q / q_mag_coef) * cos(q_phase_coef * (M_PI / 180));
+
+  // load impedance
+  i = i_real - q_real;
+  q = i_imag + q_imag;
+
+  return i, q;
+}
+
 /**
  * @brief Calculate BioZ impedance from FIFO data.
  *
@@ -509,71 +557,76 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
     Q = adcQ;
   }
 
-  // --- Timestamp using sample index and sr_bioz ---
-  uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
-  sample_index++;
-
-  // Convert to Ohms
-  double I_ohm = convertCountsToOhms(I);
-  double Q_ohm = convertCountsToOhms(Q);
-  // freq calc
-  double F_BIOZ = getBiozFreq();
-  // debug calcs
-
-  // double phase_rad = atan2(Q_ohm, I_ohm);
-  // double phase_deg = phase_rad * (180.0 / M_PI);
-
-  // Debugging prints
-
-  // printf("M Divider: %d\n", M);
-  // printf("Ref Clock: %d Hz\n", getRefClkHz());
-  // printf("DAC OSR: %d\n", getDACOSR());
-  // printf("K Divider: %d\n", getKDiv());
-  // printf("BioZ Frequency: %.2f Hz\n", F_BIOZ);
-  // printf("t = %lu ms\tFreq = %f kHz\tQ = %.2f\tI = %.2f, adc= %.2f\n", timestamp, F_BIOZ, Q, I, bioz_adc_osr);
-  // printf("overflow count = %d\n", regRead(0x0A) & 0x0F); // Read overflow count from register 0x1B
-  // printf("SR: %.4f\n", sr_bioz);
-  // printf("gain = %f\n", getBiozGain());
-
-  // printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
-  // printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
-
-  // -- Print the results to terminal --
-  // printf("%lu\n", timestamp);
-  // printf("%.1f\t", Q_ohm);
-  // printf("%.1f\t", I_ohm);
-  // printf("%.1f\n", F_BIOZ);
-  // printf("%d\n", regRead(0x0A) & 0x80);
-  // printf("phase: %f\n", phase_deg);
-
-  // SD card upload
-  char log_entry[128];
-
-  // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(
-      log_entry,
-      sizeof(log_entry),
-      "%lu,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
-      timestamp, Q_ohm, I_ohm, F_BIOZ,
-      data->ax, data->ay, data->az,
-      data->gx, data->gy, data->gz);
-
-  // Send log entry via BLE
-  datsSendData(AppConnIsOpen(), log_entry, log_len);
-
-  if (log_len < 0 || log_len >= sizeof(log_entry))
+  
+  // calib phase/mag coefs & offsets
+  if in_calibration
   {
-    printf("Error formatting log entry.\n");
-    return -1;
-  }
-
-  // Write to SD card
-  UINT written;
-  if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK || written != log_len)
+    double i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef = calibrate();
+  } else
   {
-    printf("Write failed: %s\n", FF_ERRORS[err]);
+    // --- Timestamp using sample index and sr_bioz ---
+    uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
+    sample_index++;
+    // Convert to Ohms
+    double I_calibed, Q_calibed = calibCounts(I, Q, i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef);
+    double I_ohm = convertCountsToOhms(I_calibed);
+    double Q_ohm = convertCountsToOhms(Q_calibed);
+    double phase_rad = atan2(Q_ohm, I_ohm);
+    double phase_deg = phase_rad * (180.0 / M_PI);
+    
+    // SD card upload
+    char log_entry[128];
+  
+    // Format the log entry with timestamp, Q, I, and F_BIOZ
+    int log_len = snprintf(
+        log_entry,
+        sizeof(log_entry),
+        "%lu,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+        timestamp, Q_ohm, I_ohm, F_BIOZ,
+        data->ax, data->ay, data->az,
+        data->gx, data->gy, data->gz);
+  
+    // Send log entry via BLE
+    datsSendData(AppConnIsOpen(), log_entry, log_len);
+  
+    if (log_len < 0 || log_len >= sizeof(log_entry))
+    {
+      printf("Error formatting log entry.\n");
+      return -1;
+    }
+  
+    // Write to SD card
+    UINT written;
+    if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK || written != log_len)
+    {
+      printf("Write failed: %s\n", FF_ERRORS[err]);
+      return err;
+    }
+  
     return err;
   }
+  
+  // Debugging prints
 
-  return err;
+  printf("M Divider: %d\n", M);
+  printf("Ref Clock: %d Hz\n", getRefClkHz());
+  printf("DAC OSR: %d\n", getDACOSR());
+  printf("K Divider: %d\n", getKDiv());
+  printf("BioZ Frequency: %.2f Hz\n", F_BIOZ);
+  printf("t = %lu ms\tFreq = %f kHz\tQ = %.2f\tI = %.2f, adc= %.2f\n", timestamp, F_BIOZ, Q, I, bioz_adc_osr);
+  printf("overflow count = %d\n", regRead(0x0A) & 0x0F); // Read overflow count from register 0x1B
+  printf("SR: %.4f\n", sr_bioz);
+  printf("gain = %f\n", getBiozGain());
+
+  printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
+  printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
+
+  -- Print the results to terminal --
+  printf("%lu\n", timestamp);
+  printf("%.1f\t", Q_ohm);
+  printf("%.1f\t", I_ohm);
+  printf("%.1f\n", F_BIOZ);
+  printf("%d\n", regRead(0x0A) & 0x80);
+  printf("phase: %f\n", phase_deg);
+
 }

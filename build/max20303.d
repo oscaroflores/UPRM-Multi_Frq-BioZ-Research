@@ -1,0 +1,32 @@
+/Users/osk/maxsdk_ws/UPRM-Multi_Frq-BioZ-Research/build/max20303.o: \
+ /Users/osk/MaximSDK/Libraries/MiscDrivers/PMIC/max20303.c \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ include/max32655.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/system_max32655.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_errors.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_delay.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/i2c.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdbool.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
+ /Users/osk/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/i2c_regs.h \
+ /Users/osk/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/dma_regs.h \
+ /Users/osk/MaximSDK/Libraries/MiscDrivers/PMIC/max20303.h

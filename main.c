@@ -110,6 +110,7 @@ bool sample_ready = 0;
 #if defined(HCI_TR_EXACTLE) && (HCI_TR_EXACTLE == 1)
 static LlRtCfg_t mainLlRtCfg;
 #endif
+int in_calibration = 0;
 
 volatile int wutTrimComplete;
 
