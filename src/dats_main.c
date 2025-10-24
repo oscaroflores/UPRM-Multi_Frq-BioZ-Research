@@ -522,7 +522,7 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
             int argc = 1;
             int err = handle_calib(argc, argv);
             if (err == E_NO_ERROR)
-                printf("Calibration executed.\n")
+                printf("Calibration executed.\n");
             else
                 printf("Calibration failed: %d\n", err);
         }

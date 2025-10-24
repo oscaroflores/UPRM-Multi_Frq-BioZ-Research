@@ -18,7 +18,7 @@
  * limitations under the License.
  *
  ******************************************************************************/
-#include "cli.h"
+#include "../include/cli.h"
 
 #include "spiFunctions.h"
 

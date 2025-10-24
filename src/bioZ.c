@@ -37,10 +37,10 @@ extern uint8_t IMag;
 extern int count;
 extern int errCnt;
 extern int in_calibration; 
+uint32_t sample_index = 0;       // Declare as global variable
 
 // Globals
 uint32_t sample_interval_us = 0; // make accessible from main if needed
-uint32_t sample_index = 0;       // Declare as global variable
 double sr_bioz;
 double bioz_adc_osr;
 double ndiv;
@@ -559,18 +559,22 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
 
   
   // calib phase/mag coefs & offsets
-  if in_calibration
-  {
-    double i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef = calibrate();
-  } else
-  {
+  // if in_calibration
+  // {
+  //   double i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef = calibrate();
+  // } else
+  // {
+
+    double F_BIOZ = getBiozFreq();
+    double M = getMdiv();
+
     // --- Timestamp using sample index and sr_bioz ---
     uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
     sample_index++;
     // Convert to Ohms
-    double I_calibed, Q_calibed = calibCounts(I, Q, i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef);
-    double I_ohm = convertCountsToOhms(I_calibed);
-    double Q_ohm = convertCountsToOhms(Q_calibed);
+    // double I_calibed, Q_calibed = calibCounts(I, Q, i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef);
+    double I_ohm = convertCountsToOhms(I);
+    double Q_ohm = convertCountsToOhms(Q);
     double phase_rad = atan2(Q_ohm, I_ohm);
     double phase_deg = phase_rad * (180.0 / M_PI);
     
@@ -604,7 +608,7 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
     }
   
     return err;
-  }
+  // }
   
   // Debugging prints
 
@@ -621,7 +625,7 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
   printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
   printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
 
-  -- Print the results to terminal --
+  // -- Print the results to terminal --
   printf("%lu\n", timestamp);
   printf("%.1f\t", Q_ohm);
   printf("%.1f\t", I_ohm);

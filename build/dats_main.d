@@ -1,7 +1,5 @@
-C:/Users/oscar/Downloads/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
- main.c C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
- include/max32655.h \
+C:/Users/oscar/Downloads/UPRM-Multi_Frq-BioZ-Research/build/dats_main.o: \
+ src/dats_main.c include/cli.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdint.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdint.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/_default_types.h \
@@ -9,6 +7,12 @@ C:/Users/oscar/Downloads/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_newlib_version.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_intsup.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_stdint.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
+ C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdbool.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
+ include/max32655.h \
  C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
  C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
  C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
@@ -19,14 +23,8 @@ C:/Users/oscar/Downloads/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gpio_regs.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/tmr_regs.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_sys.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/gcr_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/lpgcr_regs.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h \
- C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/lib/gcc/arm-none-eabi/14.2.1/include/stdbool.h \
- include/MAX30009.h include/MAX32655.h include/bioZ.h \
- include/spiFunctions.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdio.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/_ansi.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/newlib.h \
@@ -45,88 +43,50 @@ C:/Users/oscar/Downloads/UPRM-Multi_Frq-BioZ-Research/build/main.o: \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/_locale.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/strings.h \
  C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/sys/string.h \
- C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/math.h \
- include/MAX30009.h include/MAX32655.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_device.h \
- C:/MaximSDK/Libraries/MiscDrivers/LED/led.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
- C:/MaximSDK/Libraries/Boards/MAX32655/FTHR_Apps_P1/Include/board.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/spi_regs.h \
- C:/MaximSDK/Libraries/MiscDrivers/PushButton/pb.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/gpio.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_delay.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/uart.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/uart_regs.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/dma.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/dma_regs.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/nvic_table.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_pins.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/spi.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_assert.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/mxc_lock.h \
- include/cli.h include/sdhc.h \
- C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/stdlib.h \
- C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/machine/stdlib.h \
- C:/Program\ Files\ (x86)/Arm\ GNU\ Toolchain\ arm-none-eabi/14.2\ rel1/arm-none-eabi/include/alloca.h \
- C:/MaximSDK/Libraries/SDHC/ff15/source/ff.h \
- C:/MaximSDK/Libraries/SDHC/ff15/source/conf/ffconf.h \
- include/spiFunctions.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/rtc.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/rtc_regs.h \
- include/user-cli.h C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_trace.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_bufio.h \
+ C:/MaximSDK/Libraries/Cordio/wsf/include/util/bstream.h \
+ C:/MaximSDK/Libraries/Cordio/wsf/include/util/bda.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_msg.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_queue.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_os.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_assert.h \
+ C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_trace.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_buf.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_heap.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_cs.h \
+ C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_nvm.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_timer.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_os.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/sec_api.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/hci_handler.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/dm_handler.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/l2c_handler.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/att_handler.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/smp_handler.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/l2c_api.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/dm_api.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/include/hci_api.h \
  C:/MaximSDK/Libraries/Cordio/wsf/include/hci_defs.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/util/bda.h \
+ C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_os.h \
+ C:/MaximSDK/Libraries/Cordio/ble-host/include/sec_api.h \
+ C:/MaximSDK/Libraries/Cordio/ble-host/include/dm_api.h \
+ C:/MaximSDK/Libraries/Cordio/ble-host/include/hci_api.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/sources/stack/cfg/cfg_stack.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/include/smp_defs.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/include/sec_api.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/l2c_defs.h \
+ C:/MaximSDK/Libraries/Cordio/ble-host/include/smp_api.h \
+ C:/MaximSDK/Libraries/Cordio/ble-host/include/dm_api.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/include/att_api.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/include/att_defs.h \
  C:/MaximSDK/Libraries/Cordio/ble-host/include/att_uuid.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/smp_api.h \
  C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_api.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/dm_api.h \
  C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_db.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/include/hci_core.h \
- C:/MaximSDK/Libraries/Cordio/ble-host/sources/hci/exactle/hci_core_ps.h \
- C:/MaximSDK/Libraries/Cordio/controller/include/ble/ll_api.h \
- C:/MaximSDK/Libraries/Cordio/controller/include/common/cfg_mac_ble.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/ll_defs.h \
- C:/MaximSDK/Libraries/Cordio/wsf/include/wsf_queue.h \
- C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_terminal.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/sources/af/app_main.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_db.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_cfg.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_ui.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/sources/services/svc_ch.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/sources/services/svc_core.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/sources/services/svc_wp.h \
+ C:/MaximSDK/Libraries/Cordio/wsf/include/util/calc128.h \
+ C:/MaximSDK/Libraries/Cordio/ble-profiles/sources/profiles/gatt/gatt_api.h \
+ include/dats_api.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/wut.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/wut_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/trimsir_regs.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/i2c.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/i2c_regs.h \
- C:/MaximSDK/Libraries/Cordio/controller/include/ble/ll_init_api.h \
- C:/MaximSDK/Libraries/Cordio/controller/include/common/bb_api.h \
- C:/MaximSDK/Libraries/Cordio/controller/include/common/cfg_mac.h \
- C:/MaximSDK/Libraries/Cordio/platform/include/pal_bb.h \
+ C:/MaximSDK/Libraries/Cordio/platform/include/pal_btn.h \
  C:/MaximSDK/Libraries/Cordio/platform/include/pal_types.h \
- C:/MaximSDK/Libraries/Cordio/controller/include/ble/ll_api.h \
- C:/MaximSDK/Libraries/Cordio/platform/include/pal_cfg.h \
- include/dats_api.h \
- C:/MaximSDK/Libraries/Cordio/ble-profiles/include/app_ui.h
+ C:/MaximSDK/Libraries/Cordio/platform/include/pal_uart.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX32655/tmr.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/tmr_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32655/Include/mcr_regs.h \
+ services/svc_sds.h include/user-cli.h
