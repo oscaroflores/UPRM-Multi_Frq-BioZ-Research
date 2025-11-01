@@ -112,14 +112,14 @@ class BLEBioZPlotter(QtWidgets.QWidget):
 
     @asyncSlot()
     async def scan_devices(self):
+        print("scan initiated.")
         self.devices = await BleakScanner.discover()
         self.device_box.clear()
         filtered = [d for d in self.devices if d.name and d.name.strip()]
         self.devices = filtered  # overwrite with filtered list
         for d in self.devices:
             self.device_box.addItem(f"{d.name} ({d.address})")
-
-
+        print("scan concluded.")
 
     @asyncSlot()
     async def connect_device(self):
@@ -267,9 +267,10 @@ class BLEBioZPlotter(QtWidgets.QWidget):
             
     @asyncSlot()
     async def calibrate(self):
-        if not self.client or not self.write_char:
-            return
-        await self.client.write_gatt_char(self.write_char, b"calib")
+        print("Clicked calib button")
+        if self.client or self.write_char:
+            await self.client.write_gatt_char(self.write_char, b"calib")
+        self.calib_button.isEnabled(False)
 
 
 if __name__ == "__main__":

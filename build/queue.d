@@ -1,0 +1,32 @@
+/Users/osk/maxsdk_ws/UPRM-Multi_Frq-BioZ-Research/build/queue.o: \
+ src/queue.c \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdbool.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdio.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/newlib.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/config.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/ieeefp.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/cdefs.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdarg.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/reent.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_ansi.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/lock.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/endian.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_endian.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/select.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_sigset.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_timeval.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/timespec.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_timespec.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_pthreadtypes.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/sched.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/stdio.h

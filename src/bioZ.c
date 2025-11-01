@@ -1,6 +1,10 @@
+#include "bioZ.h"
 #include "MAX30009.h"
 #include "MAX32655.h"
+#include "app_api.h"
+#include "att_api.h"
 #include "board.h"
+#include "dats_api.h"
 #include "dma.h"
 #include "led.h"
 #include "mxc_delay.h"
@@ -8,22 +12,18 @@
 #include "mxc_pins.h"
 #include "mxc_sys.h"
 #include "nvic_table.h"
+#include "rtc.h"
 #include "sdhc.h"
 #include "spi.h"
 #include "spiFunctions.h"
 #include "tmr.h"
 #include "uart.h"
+#include "queue.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "rtc.h"
-#include "att_api.h"
-#include "dats_api.h"
-#include "app_api.h"
-#include "bioZ.h"
-#include <math.h>
 
 #define M_PI 3.14159265358979323846
 
@@ -36,23 +36,25 @@ uint8_t adcQData[10];
 extern uint8_t IMag;
 extern int count;
 extern int errCnt;
-extern int in_calibration; 
-uint32_t sample_index = 0;       // Declare as global variable
+extern int in_calibration;
+extern uint8_t gHold[100];
+uint32_t sample_index = 0; // Declare as global variable
 
 // Globals
 uint32_t sample_interval_us = 0; // make accessible from main if needed
 double sr_bioz;
 double bioz_adc_osr;
 double ndiv;
+
 /**
  * @brief Change M divider value.
  *
  * @param val The value to set for the M divider.
  *
- * This function changes the M divider value, which spans over two separate registers.
+ * This function changes the M divider value, which spans over two separate
+ * registers.
  */
-void setMdiv(int val)
-{
+void setMdiv(int val) {
   /*
   This function is specifically to change the M divider value
   as it spans over two seperate registers
@@ -72,14 +74,13 @@ void setMdiv(int val)
 /**
  * @brief Configure the BioZ BIA settings for the MAX30009.
  *
- * This function initializes the BioZ BIA settings by configuring various registers
- * to set up the device for BioZ measurements. It includes PLL, clock, gain setup,
- * basic sensor/AFE configuration, interrupt setup, and DAC/ADC OSR configuration.
- * It also clears the status register and brings the device out of shutdown.
- * It must be called before starting any BioZ measurements.
+ * This function initializes the BioZ BIA settings by configuring various
+ * registers to set up the device for BioZ measurements. It includes PLL, clock,
+ * gain setup, basic sensor/AFE configuration, interrupt setup, and DAC/ADC OSR
+ * configuration. It also clears the status register and brings the device out
+ * of shutdown. It must be called before starting any BioZ measurements.
  */
-void BIAsettings()
-{
+void BIAsettings() {
   // --- Reset and bring device out of shutdown ---
   regWrite(0x20, 1 << 2); // BIOZ_BG_EN
   regWrite(0x11, 0);      // clear SHDN
@@ -116,17 +117,36 @@ void BIAsettings()
   regWrite(0x50, 0x00);
   regWrite(0x51, 0x00);
   regWrite(0x58, 0x07); // All clock gates on
-
+  
   // --- Interrupt Setup ---
   regWrite(0x80, 0xA0); // Enable A_FULL_EN and FIFO_DATA_RDY_EN
   regWrite(0x81, 0x00); // Optional: disable error interrupts for now
-
+  
   // --- DAC/ADC OSR Config ---
-  regWrite(0x20, 0xA0); // DAC_OSR = 2 (128), ADC_OSR = 5 (256), BG_EN, Q_EN, I_EN = 0
-
-  // --- Note: Must call setFreq() after this to finalize DAC/ADC and KDIV settings
-  changeReg(0x17, 0, 5, 1); // NDIV = 0 (512)
-  setMdiv(512);
+  regWrite(0x20,
+    0xA0); // DAC_OSR = 2 (128), ADC_OSR = 5 (256), BG_EN, Q_EN, I_EN = 0
+    
+    // --- Note: Must call setFreq() after this to finalize DAC/ADC and KDIV
+    // settings
+    changeReg(0x17, 0, 5, 1); // NDIV = 0 (512)
+    setMdiv(512);
+    
+    
+    // Register settings to calculate offsets
+    // REMEMBER TO COMMENT OUT PREVIOUS 0x22 regWrite()
+    // regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
+    // regWrite(0x25, (1 << 5));
+    
+    
+    // Register settings for in-phase calib
+    // regWrite(0x41, (1 << 2) | (0 << 1) | (1 << 0)); // Enable calibration ports
+    // regWrite(0x25, (0 << 5));
+    // regWrite(0x28, (1 << 3));
+    
+    // Register settings for quad-phase calib
+    // regWrite(0x41, (0 << 2) | (1 << 1) | (1 << 0)); // Enable calibration ports
+    // regWrite(0x28, (0 << 3));
+    // regWrite(0x28, (1 << 2));
 }
 
 /**
@@ -138,20 +158,16 @@ void BIAsettings()
  *
  * @return The reference clock frequency in Hz.
  */
-uint32_t getRefClkHz()
-{
+uint32_t getRefClkHz() {
 
   uint8_t ref_clk_sel = regRead(0x1A) & 0b01000000;  // Bit 6
   uint8_t clk_freq_sel = regRead(0x1A) & 0b00100000; // Bit 5
   // printf("ref_clk_sel: %d\t", ref_clk_sel);
   // printf("clk_freq_sel: %d\n", clk_freq_sel);
-  if (ref_clk_sel == 0)
-  {
+  if (ref_clk_sel == 0) {
     // Internal oscillator
     return (clk_freq_sel == 0) ? 32000 : 32768;
-  }
-  else
-  {
+  } else {
     // External oscillator
     return (clk_freq_sel == 0) ? 32000 : 32768;
   }
@@ -160,13 +176,12 @@ uint32_t getRefClkHz()
 /**
  * @brief Get the sample interval in seconds.
  *
- * This function calculates the sample interval based on the reference clock frequency,
- * M divider, N divider, and ADC oversampling rate.
+ * This function calculates the sample interval based on the reference clock
+ * frequency, M divider, N divider, and ADC oversampling rate.
  *
  * @return The sample interval in seconds.
  */
-double getSampleInterval()
-{
+double getSampleInterval() {
   uint32_t ref_clk = getRefClkHz();
 
   int mdiv_high = (regRead(0x17) >> 6) & 0x03;
@@ -201,11 +216,9 @@ double getSampleInterval()
  * The possible values are 32, 64, 128, or 256.
  * @return The DAC oversampling rate in samples per second.
  */
-int getDACOSR()
-{
+int getDACOSR() {
   uint8_t val = (regRead(0x20) & 0b11000000) >> 6;
-  switch (val)
-  {
+  switch (val) {
   case 0:
     return 32;
   case 1:
@@ -227,18 +240,15 @@ int getDACOSR()
  *
  * @return The K divider value.
  */
-int getKDiv()
-{
+int getKDiv() {
 
   uint8_t k_div = (regRead(0x17) & 0b00011110) >> 1; // Bits 4:1
-  uint16_t k_div_table[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 8192, 8192};
+  uint16_t k_div_table[] = {1,   2,   4,    8,    16,   32,   64,   128,
+                            256, 512, 1024, 2048, 4096, 8192, 8192, 8192};
 
-  if (k_div < 14)
-  {
+  if (k_div < 14) {
     return k_div_table[k_div];
-  }
-  else
-  {
+  } else {
     return 8192;
   }
 }
@@ -251,13 +261,11 @@ int getKDiv()
  *
  * @return The BioZ gain factor.
  */
-double getBiozGain()
-{
+double getBiozGain() {
   uint8_t reg_val = regRead(0x24);    // If your doc says 0x24, change this
   uint8_t gain_bits = reg_val & 0x03; // Bits [1:0]
 
-  switch (gain_bits)
-  {
+  switch (gain_bits) {
   case 0x00:
     return 1.0;
   case 0x01:
@@ -276,13 +284,13 @@ double getBiozGain()
  * @brief Get the BioZ current in microamperes.
  *
  * This function reads the BioZ current settings from the MAX30009 registers
- * and calculates the current in microamperes based on the VDRV_MAG and IDRV_RGE settings.
- * It uses predefined values for VDRV_MAG and IDRV_RGE to compute the current.
+ * and calculates the current in microamperes based on the VDRV_MAG and IDRV_RGE
+ * settings. It uses predefined values for VDRV_MAG and IDRV_RGE to compute the
+ * current.
  *
  * @return The BioZ current in microamperes (µA).
  */
-double getBiozCurrent_uA()
-{
+double getBiozCurrent_uA() {
   uint8_t reg_val = regRead(0x22);
 
   uint8_t vdrv_mag_bits = (reg_val >> 4) & 0x03; // bits 5:4
@@ -303,19 +311,18 @@ double getBiozCurrent_uA()
 /**
  * @brief Set the frequency for BioZ signal generation.
  *
- * This function configures the frequency-specific settings for BioZ signal generation.
- * It supports two frequencies: 4 kHz and 131 kHz.
+ * This function configures the frequency-specific settings for BioZ signal
+ * generation. It supports two frequencies: 4 kHz and 131 kHz.
  *
  * @param freq The frequency to set:
  *             0 for 4 kHz, 1 for 131 kHz.
  *
- * @note Only supports 4kHz and 131 kHz. Refactoring necessary for other frequencies.
+ * @note Only supports 4kHz and 131 kHz. Refactoring necessary for other
+ * frequencies.
  */
-void setFreq(int freq)
-{
+void setFreq(int freq) {
 
-  switch (freq)
-  {
+  switch (freq) {
   case 0:
     changeReg(0x17, 5, 4, 4); // k_div = 32, 4kHz
 
@@ -339,8 +346,7 @@ void setFreq(int freq)
  *
  * @return The M divider value.
  */
-int getMdiv(void)
-{
+int getMdiv(void) {
   int mdiv_high = (regRead(0x17) >> 6) & 0x03;
   int mdiv_low = regRead(0x18);
   return (mdiv_high << 8) | mdiv_low;
@@ -355,8 +361,7 @@ int getMdiv(void)
  *
  * @return The PLL clock frequency in Hz.
  */
-double getPllClk(void)
-{
+double getPllClk(void) {
   int M = getMdiv(); // Uses your getMdiv() function
   return getRefClkHz() * (M + 1);
 }
@@ -370,8 +375,7 @@ double getPllClk(void)
  *
  * @return The BioZ frequency in Hz.
  */
-double getBiozFreq(void)
-{
+double getBiozFreq(void) {
   int M = getMdiv();
   double PLL_CLK = getRefClkHz() * (M + 1);
   return PLL_CLK / (getKDiv() * getDACOSR());
@@ -389,8 +393,7 @@ double getBiozFreq(void)
  *
  * @return The calculated resistance in Ohms.
  */
-double convertCountsToOhms(double count)
-{
+double convertCountsToOhms(double count) {
   const double V_REF = 1.0;
   const double TWO_OVER_PI = 2.0 / M_PI;
   const double ADC_FS = pow(2, 19);
@@ -398,8 +401,7 @@ double convertCountsToOhms(double count)
   double gain = getBiozGain();
   double i_mag = getBiozCurrent_uA() / 1e6;
 
-  if (gain <= 0 || i_mag <= 0)
-  {
+  if (gain <= 0 || i_mag <= 0) {
     printf("Invalid gain or current. Gain=%.2f, I=%.6f A\n", gain, i_mag);
     return 0.0;
   }
@@ -407,31 +409,10 @@ double convertCountsToOhms(double count)
   return (count * V_REF) / (ADC_FS * gain * TWO_OVER_PI * i_mag);
 }
 
-double calibrate()
-{
-  double i_offset;
-  double q_offset;
-  double i_mag_coef;
-  double q_mag_coef;
-  double i_phase_coef;
-  double q_phase_coef;
-
-  // set frequency
-
-  // offsets
-  regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
-  regWrite(0x25, (1 << 5));
-  regWrite(0x20, (1 << 0) | (1 << 1));
-
-  // record data until settled and then record average impedance to i_offset and q_offset
-
-  
-
-  return i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef; 
-}
-
-double calibCounts(double i_count, double q_count, double i_offset, double q_offset, double i_mag_coef, double q_mag_coef, double i_phase_coef, double q_phase_coef)
-{
+double applyCalibCoefficients(double i_count, double q_count, double i_offset,
+                              double q_offset, double i_mag_coef,
+                              double q_mag_coef, double i_phase_coef,
+                              double q_phase_coef) {
   double i;
   double q;
 
@@ -467,14 +448,12 @@ double calibCounts(double i_count, double q_count, double i_offset, double q_off
  *
  * @return 0 on success, 1 for invalid data, 2 for marker, or 3 for error.
  */
-int calcBioZ(uint8_t buf[], imu_data_t *data)
-{
+int calcBioZ(uint8_t buf[]) {
 
   uint8_t x1[3], x2[3];
   int i, err = 0;
 
-  for (i = 0; i < 3; i++)
-  {
+  for (i = 0; i < 3; i++) {
     x1[i] = buf[i];
     x2[i] = buf[i + 3];
   }
@@ -485,8 +464,7 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
   /***************************************************
   Find which array is Quadrature phase and which is In phase
   ********************************************************/
-  if ((a == 0x10) && (b == 0x20))
-  {
+  if ((a == 0x10) && (b == 0x20)) {
     adcIData[0] = (x1[0] & 0x0F);
     adcIData[1] = x1[1];
     adcIData[2] = x1[2];
@@ -494,9 +472,7 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
     adcQData[0] = (x2[0] & 0x0F);
     adcQData[1] = x2[1];
     adcQData[2] = x2[2];
-  }
-  else if ((a == 0x20) && (b == (0x10)))
-  {
+  } else if ((a == 0x20) && (b == (0x10))) {
     adcIData[0] = (x2[0] & 0x0F);
     adcIData[1] = x2[1];
     adcIData[2] = x2[2];
@@ -504,112 +480,102 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
     adcQData[0] = (x1[0] & 0x0F);
     adcQData[1] = x1[1];
     adcQData[2] = x1[2];
-  }
-  else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
-           x1[2] == 0xFF && x2[2] == 0xFF)
-  {
+  } else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
+             x1[2] == 0xFF && x2[2] == 0xFF) {
     printf("Invalid Data\n");
     return 1;
-  }
-  else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
-           x1[2] == 0xFE && x2[2] == 0xFF)
-  {
+  } else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
+             x1[2] == 0xFE && x2[2] == 0xFF) {
     printf("Marker\n");
     return 2;
-  }
-  else
-  {
+  } else {
     errCnt++;
     return 3;
   }
 
+  
   double I, Q, temp;
   uint32_t L, d;
-
+  
   uint32_t adcI = adcIData[2] + (adcIData[1] << 8) + (adcIData[0] << 16);
   uint32_t adcQ = adcQData[2] + (adcQData[1] << 8) + (adcQData[0] << 16);
-
-  if (adcI >> 19 == 1)
-  {
+  
+  if (adcI >> 19 == 1) {
     L = (adcI & 0x7FFFF);
     d = 0x80000;
     I = L;
     temp = d;
     I = I - temp;
     adcI = adcI >> 1;
-  }
-  else
-  {
+  } else {
     I = adcI;
   }
-
-  if (adcQ >> 19 == 1)
-  {
+  
+  if (adcQ >> 19 == 1) {
     L = (adcQ & 0x7FFFF);
     d = 0x80000;
     Q = L;
     temp = d;
     Q = Q - temp;
     adcQ = adcQ >> 1;
-  }
-  else
-  {
+  } else {
     Q = adcQ;
   }
 
-  
-  // calib phase/mag coefs & offsets
-  // if in_calibration
-  // {
-  //   double i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef = calibrate();
-  // } else
-  // {
-
-    double F_BIOZ = getBiozFreq();
-    double M = getMdiv();
-
-    // --- Timestamp using sample index and sr_bioz ---
-    uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
-    sample_index++;
-    // Convert to Ohms
-    // double I_calibed, Q_calibed = calibCounts(I, Q, i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef);
-    double I_ohm = convertCountsToOhms(I);
-    double Q_ohm = convertCountsToOhms(Q);
-    double phase_rad = atan2(Q_ohm, I_ohm);
-    double phase_deg = phase_rad * (180.0 / M_PI);
-    
-    // SD card upload
-    char log_entry[128];
-  
-    // Format the log entry with timestamp, Q, I, and F_BIOZ
-    int log_len = snprintf(
-        log_entry,
-        sizeof(log_entry),
-        "%lu,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
-        timestamp, Q_ohm, I_ohm, F_BIOZ,
-        data->ax, data->ay, data->az,
-        data->gx, data->gy, data->gz);
-  
-    // Send log entry via BLE
-    datsSendData(AppConnIsOpen(), log_entry, log_len);
-  
-    if (log_len < 0 || log_len >= sizeof(log_entry))
-    {
-      printf("Error formatting log entry.\n");
-      return -1;
-    }
-  
-    // Write to SD card
-    UINT written;
-    if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK || written != log_len)
-    {
-      printf("Write failed: %s\n", FF_ERRORS[err]);
-      return err;
-    }
-  
-    return err;
+  // if (isFull(&calibQueue)) {
+  //   dequeue(&calibQueue);
+  //   dequeue(&calibQueue);
   // }
-  
+  // enqueue(&calibQueue, I);
+  // enqueue(&calibQueue, Q);
+
+  double F_BIOZ = getBiozFreq();
+  double M = getMdiv();
+
+  printf("%.2f %.2f %.2f", F_BIOZ, I, Q);
+  printf(" %d", M);
+  printf(" %d", getRefClkHz());
+  printf(" %d", getDACOSR());
+  printf(" %d\n", getKDiv());
+
+  // --- Timestamp using sample index and sr_bioz ---
+  uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
+  sample_index++;
+  // Convert to Ohms
+  // double I_calibed, Q_calibed = applyCalibCoefficients(I, Q, i_offset,
+  // q_offset, i_mag_coef, q_mag_coef, i_phase_coef, q_phase_coef);
+  double I_ohm = convertCountsToOhms(I);
+  double Q_ohm = convertCountsToOhms(Q);
+  double phase_rad = atan2(Q_ohm, I_ohm);
+  double phase_deg = phase_rad * (180.0 / M_PI);
+
+  // SD card upload
+  char log_entry[128];
+
+  // Format the log entry with timestamp, Q, I, and F_BIOZ
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n",
+                         timestamp, Q_ohm, I_ohm, F_BIOZ);
+
+  // Send log entry via BLE
+  datsSendData(AppConnIsOpen(), log_entry, log_len);
+
+  if (log_len < 0 || log_len >= sizeof(log_entry)) {
+    printf("Error formatting log entry.\n");
+    return -1;
+  }
+
+  // Write to SD card
+  UINT written;
+  if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK ||
+      written != log_len) {
+    printf("Write failed: %s\n", FF_ERRORS[err]);
+    return err;
+  }
+
+
+  return err;
+  // }
+
   // Debugging prints
 
   printf("M Divider: %d\n", M);
@@ -617,12 +583,15 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
   printf("DAC OSR: %d\n", getDACOSR());
   printf("K Divider: %d\n", getKDiv());
   printf("BioZ Frequency: %.2f Hz\n", F_BIOZ);
-  printf("t = %lu ms\tFreq = %f kHz\tQ = %.2f\tI = %.2f, adc= %.2f\n", timestamp, F_BIOZ, Q, I, bioz_adc_osr);
-  printf("overflow count = %d\n", regRead(0x0A) & 0x0F); // Read overflow count from register 0x1B
+  printf("t = %lu ms\tFreq = %f kHz\tQ = %.2f\tI = %.2f, adc= %.2f\n",
+         timestamp, F_BIOZ, Q, I, bioz_adc_osr);
+  printf("overflow count = %d\n",
+         regRead(0x0A) & 0x0F); // Read overflow count from register 0x1B
   printf("SR: %.4f\n", sr_bioz);
   printf("gain = %f\n", getBiozGain());
 
-  printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
+  printf("OVF: %d\n",
+         regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
   printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
 
   // -- Print the results to terminal --
@@ -632,5 +601,4 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
   printf("%.1f\n", F_BIOZ);
   printf("%d\n", regRead(0x0A) & 0x80);
   printf("phase: %f\n", phase_deg);
-
 }

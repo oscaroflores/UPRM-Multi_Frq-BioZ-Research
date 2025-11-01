@@ -1,0 +1,33 @@
+/Users/osk/maxsdk_ws/UPRM-Multi_Frq-BioZ-Research/build/init.o: \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/sources/ble/init/init.c \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/ble/ll_init_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/common/bb_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/common/cfg_mac.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_bb.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdbool.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/ble/ll_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_os.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_queue.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/util/bda.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/common/cfg_mac_ble.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/ll_defs.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/ble/bb_ble_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_bb_ble.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_bb.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_crypto.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_radio.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/common/sch_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/common/bb_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/ble/bb_ble_sniffer_api.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/controller/include/ble/bb_ble_api.h

@@ -56,4 +56,6 @@ int handle_unmount(int argc, char *argv[]);
 int handle_start(int argc, char *argv[]);
 
 int handle_stop(int argc, char *argv[]);
+
+int handle_calib(int argc, char *argv[]);           
 #endif // EXAMPLES_MAX32655_SDHC_FTHR_INCLUDE_USER_CLI_H_

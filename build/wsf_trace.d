@@ -1,0 +1,22 @@
+/Users/osk/maxsdk_ws/UPRM-Multi_Frq-BioZ-Research/build/wsf_trace.o: \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/sources/targets/baremetal/wsf_trace.c \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/machine/_default_types.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/features.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/_newlib_version.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_intsup.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/arm-none-eabi/include/sys/_stdint.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_trace.h \
+ /Users/osk/MaximSDK/Tools/GNUTools/10.3/lib/gcc/arm-none-eabi/10.3.1/include/stdarg.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_types.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_bufio.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_buf.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/util/print.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_sys.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/platform/include/pal_types.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_assert.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_trace.h \
+ /Users/osk/MaximSDK/Libraries/Cordio/wsf/include/wsf_cs.h

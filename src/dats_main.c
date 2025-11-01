@@ -55,6 +55,9 @@
 #include "tmr.h"
 #include "svc_sds.h"
 #include "user-cli.h"
+#include "queue.h"
+extern Queue calibQueue[64];
+
 /**************************************************************************************************
   Macros
 **************************************************************************************************/
@@ -516,7 +519,7 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
             else
                 printf("Stop failed: %d\n", err);
         }
-        else if (strcmp(msg, "calib"))
+        else if (strcmp(msg, "calib") == 0)
         {
             char *argv[] = {"calib"};
             int argc = 1;

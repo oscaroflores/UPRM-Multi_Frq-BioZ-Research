@@ -46,6 +46,7 @@ const command_t user_commands[] = {
 };
 
 extern int sample_index; // Declare sample_index as extern to access it in other files
+extern int in_calibration;
 const unsigned int num_user_commands =
     sizeof(user_commands) / sizeof(command_t);
 
@@ -259,5 +260,6 @@ int handle_stop(int argc, char *argv[])
 
 int handle_calib(int argc, char *argv[])
 {
-  changeReg(0x20, 0x7, 2, 3);
+  in_calibration = true;
+  return E_NO_ERROR;
 }

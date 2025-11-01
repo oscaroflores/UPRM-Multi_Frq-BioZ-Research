@@ -238,7 +238,7 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits)
   regWrite(regAddr, newBits);
 }
 
-int spiBurst(imu_data_t *data)
+int spiBurst()
 {
   uint8_t regAddr = 0x0C;
   int err = 0;
@@ -293,7 +293,7 @@ int spiBurst(imu_data_t *data)
         gHold[5] = rx_buf[i + 2];
         i += 2;
 
-        calcBioZ(gHold, data);
+        calcBioZ(gHold);
       }
     }
   }
