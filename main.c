@@ -8,8 +8,16 @@ easily change the settings to measure at different rates or to measure different
 vital signs depending on necessities
 
 */
-#include "tmr.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
+#include "mxc_device.h"
+#include "mxc_delay.h"
+#include "i2c.h"
+#include "gpio.h"
+#include "tmr.h"
+#include "dats_api.h"
 #include "MAX30009.h"
 #include "MAX32655.h"
 #include "bioZ.h"
@@ -60,7 +68,6 @@ vital signs depending on necessities
 #include "wut.h"
 #include "rtc.h"
 #include "trimsir_regs.h"
-#include "i2c.h"
 
 #if defined(HCI_TR_EXACTLE) && (HCI_TR_EXACTLE == 1)
 #include "ll_init_api.h"
@@ -68,23 +75,32 @@ vital signs depending on necessities
 
 #include "pal_bb.h"
 #include "pal_cfg.h"
-
-#include "dats_api.h"
 #include "app_ui.h"
 /***** Definitions *****/
-#define SPI_SPEED 1000000 // Bit Rate
-#define I2C_MASTER MXC_I2C2
-#define I2C_FREQ 100000
-#define LSM6DSL_ADDR 0x6B
-#define WHO_AM_I_REG 0x0F
-#define CTRL1_XL 0x10
-#define CTRL2_G 0x11
-#define CTRL3_C 0x12
-#define CTRL10_C 0x19
-#define MASTER_CONFIG 0x1A
-#define STATUS_REG 0x1E
-#define OUTX_L_XL 0x28
-#define OUTX_L_G 0x22
+#define SPI_SPEED 4000000 // Bit Rate
+/*** WIRING / ELECTRICAL TOGGLES ***/
+#define INT_ACTIVE_LOW   0   // 0: active-high (LSM6DSL default), 1: active-low
+#define INT_OPEN_DRAIN   0   // 0: push-pull (default), 1: open-drain (add pull-up)
+#define USE_VDDIOH_I2C2  0   // 1 if your I2C bus is 3.3V and you need VDDIOH on P0.30/31
+
+/*** I2C / LSM6DSL ***/
+#define I2C_MASTER     MXC_I2C2
+#define I2C_FREQ       100000
+#define LSM6DSL_ADDR   0x6A           // use 0x6A if SA0/SDO is low
+
+// Registers
+#define WHO_AM_I_REG       0x0F
+#define CTRL1_XL           0x10
+#define CTRL2_G            0x11
+#define CTRL3_C            0x12
+#define INT1_CTRL          0x0D
+#define DRDY_PULSE_CFG_G   0x0B
+#define STATUS_REG         0x1E
+#define OUTX_L_XL          0x28
+/*** INT1 pin: P1_8 (GPIO1.8) ***/
+#define IMU_INT_PORT   MXC_GPIO1
+#define IMU_INT_PIN    MXC_GPIO_PIN_8     // mask bit for pin 8
+#define IMU_INT_MASK   IMU_INT_PIN
 // Board Selection
 #define SPI MXC_SPI1
 #define SPI_IRQ SPI1_IRQn
@@ -92,10 +108,14 @@ vital signs depending on necessities
 #define DEFAULT_TX_POWER 0 /* dBm */
 #define MXC_BASE_WUT0 ((uint32_t)0x40006400UL)
 #define MXC_WUT0 ((mxc_wut_regs_t *)MXC_BASE_WUT0)
-#define GYRO_CALIB_SAMPLES 50
-float gx_offset = 0, gy_offset = 0, gz_offset = 0;
+
 
 /***** Globals *****/
+extern volatile bool recordingIMU;
+static uint8_t imu_err_streak = 0;
+extern FIL imuFile;
+
+static volatile int imu_drdy_flag = 0;
 bool current_freq = 0;
 volatile bool recording = false;
 uint8_t gReadBuf[100];
@@ -188,38 +208,91 @@ void wutTrimCb(int err)
  *  \return None.
  */
 /*************************************************************************************************/
-int i2c_write(uint8_t reg, uint8_t value)
-{
-  uint8_t buffer[2] = {reg, value};
-  mxc_i2c_req_t req = {
-      .i2c = I2C_MASTER,
-      .addr = LSM6DSL_ADDR,
-      .tx_buf = buffer,
-      .tx_len = 2,
-      .rx_buf = NULL,
-      .rx_len = 0,
-      .restart = 0,
-      .callback = NULL,
-  };
-  int result = MXC_I2C_MasterTransaction(&req);
-  printf("[DEBUG] Write reg 0x%02X = 0x%02X -> %s\n", reg, value, result == 0 ? "OK" : "FAIL");
-  return result;
+static int i2c_write(uint8_t reg, uint8_t val) {
+    uint8_t buf[2] = {reg, val};
+    mxc_i2c_req_t req = {
+        .i2c=I2C_MASTER, .addr=LSM6DSL_ADDR,
+        .tx_buf=buf, .tx_len=2, .rx_buf=NULL, .rx_len=0,
+        .restart=0, .callback=NULL
+    };
+    int r = MXC_I2C_MasterTransaction(&req);
+    printf("[DEBUG] Write reg 0x%02X = 0x%02X -> %s\n", reg, val, r==0?"OK":"FAIL");
+    return r;
+}
+static int i2c_read(uint8_t reg, uint8_t *data, int len) {
+    mxc_i2c_req_t req = {
+        .i2c = I2C_MASTER, .addr = LSM6DSL_ADDR,
+        .tx_buf = &reg, .tx_len = 1,
+        .rx_buf = data, .rx_len = len,
+        .restart = 1, .callback = NULL
+    };
+    int rc = MXC_I2C_MasterTransaction(&req);
+    if (rc == E_COMM_ERR || rc == -7) {
+        // printf("[I2C RECOVER] bus stuck, clearing...\n");
+
+        // --- Bus clear ---
+        mxc_gpio_cfg_t scl = {
+            .port = MXC_GPIO0,
+            .mask = MXC_GPIO_PIN_30,
+            .func = MXC_GPIO_FUNC_OUT,
+            .vssel = MXC_GPIO_VSSEL_VDDIO
+        };
+        MXC_GPIO_Config(&scl);
+        for (int i = 0; i < 9; i++) {
+            MXC_GPIO_OutClr(MXC_GPIO0, MXC_GPIO_PIN_30);
+            MXC_Delay(MXC_DELAY_USEC(5));
+            MXC_GPIO_OutSet(MXC_GPIO0, MXC_GPIO_PIN_30);
+            MXC_Delay(MXC_DELAY_USEC(5));
+        }
+
+        // --- Reinit controller ---
+        MXC_I2C_Shutdown(I2C_MASTER);
+        MXC_I2C_Init(I2C_MASTER, 1, 0);
+        MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
+        MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
+        MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
+
+        return -1;
+    }
+    return rc;
 }
 
-int i2c_read(uint8_t reg, uint8_t *data, int len)
+
+/*** GPIO ISR ***/
+static void imuISR(void *unused)
 {
-  mxc_i2c_req_t req = {
-      .i2c = I2C_MASTER,
-      .addr = LSM6DSL_ADDR,
-      .tx_buf = &reg,
-      .tx_len = 1,
-      .rx_buf = data,
-      .rx_len = len,
-      .restart = 1,
-      .callback = NULL,
-  };
-  int result = MXC_I2C_MasterTransaction(&req);
-  return result;
+    MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
+    MXC_GPIO_DisableInt(IMU_INT_PORT, IMU_INT_MASK);   // <--- stop level-held retriggers
+    imu_drdy_flag = 1;
+}
+void GPIO1_IRQHandler(void) { MXC_GPIO_Handler(1); }
+
+static void setup_gpio_int_config_only(void)
+{
+    mxc_gpio_cfg_t pin = {
+        .port  = IMU_INT_PORT,
+        .mask  = IMU_INT_MASK,
+        .func  = MXC_GPIO_FUNC_IN,
+        .pad   = MXC_GPIO_PAD_NONE,
+        .vssel = MXC_GPIO_VSSEL_VDDIO
+    };
+    MXC_GPIO_Config(&pin);
+    MXC_GPIO_ClearFlags(pin.port, pin.mask);
+    MXC_GPIO_RegisterCallback(&pin, imuISR, NULL);
+
+    // Latched DRDY => use LEVEL-HIGH (active-low? use MXC_GPIO_INT_LOW and set H_LACTIVE)
+    MXC_GPIO_IntConfig(&pin, MXC_GPIO_INT_HIGH);
+    // DO NOT: MXC_GPIO_EnableInt(...) yet
+    // DO NOT: NVIC_EnableIRQ(...) yet
+}
+
+// --- After sensor config is done, THEN enable GPIO + NVIC ---
+static void enable_imu_gpio_irq(void)
+{
+    MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
+    MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
+    NVIC_ClearPendingIRQ(MXC_GPIO_GET_IRQ(1));
+    NVIC_EnableIRQ(MXC_GPIO_GET_IRQ(1));
 }
 void setAdvTxPower(void)
 {
@@ -378,50 +451,30 @@ int main(void)
   int err;
 
   printf("START\n");
-  if (MXC_I2C_Init(I2C_MASTER, 1, 0) != E_NO_ERROR)
-  {
-    printf("I2C init failed\n");
-    return -1;
-  }
-  MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
-  uint8_t whoami = 0;
-  if (i2c_read(WHO_AM_I_REG, &whoami, 1) != 0 || whoami != 0x6A)
-  {
-    printf("WHO_AM_I: 0x%02X (Expected 0x6A)\nDevice not recognized.\n", whoami);
-    return -1;
-  }
-  printf("WHO_AM_I: 0x%02X (Expected 0x6A)\n", whoami);
-  // Soft reset
-  i2c_write(CTRL3_C, 0x01);
-  MXC_Delay(MXC_DELAY_MSEC(100));
-  i2c_write(CTRL3_C, 0x44); // BDU=1, IF_INC=1
-  // Enable accelerometer and gyro
-  i2c_write(CTRL1_XL, 0x40);      // Accel ODR = 104Hz
-  i2c_write(CTRL2_G, 0x48);       // Gyro ODR = 104Hz
-  i2c_write(CTRL10_C, 0x38);      // Enable XL/G axes
-  i2c_write(MASTER_CONFIG, 0x00); // Disable embedded functions
-  printf("Sensor fully configured. Starting loop...\n");
-  MXC_Delay(MXC_DELAY_MSEC(100)); // Allow sensor to settle
-  printf("Calibrating gyro... keep device still.\n");
-  for (int i = 0; i < GYRO_CALIB_SAMPLES; i++)
-  {
-    uint8_t raw[6];
-    for (int j = 0; j < 6; ++j)
-      i2c_read(OUTX_L_G + j, &raw[j], 1);
-    int16_t gx = (int16_t)(raw[1] << 8 | raw[0]);
-    int16_t gy = (int16_t)(raw[3] << 8 | raw[2]);
-    int16_t gz = (int16_t)(raw[5] << 8 | raw[4]);
+  MXC_I2C_Init(I2C_MASTER, 1, 0);
+    MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
 
-    gx_offset += gx * 8.75f / 1000.0f;
-    gy_offset += gy * 8.75f / 1000.0f;
-    gz_offset += gz * 8.75f / 1000.0f;
+    // Probe
+    uint8_t who = 0;
+    i2c_read(WHO_AM_I_REG, &who, 1);
+    printf("WHO_AM_I: 0x%02X\n", who);
 
-    MXC_Delay(MXC_DELAY_MSEC(50));
-  }
-  gx_offset /= GYRO_CALIB_SAMPLES;
-  gy_offset /= GYRO_CALIB_SAMPLES;
-  gz_offset /= GYRO_CALIB_SAMPLES;
-  printf("Gyro bias: X=%.2f, Y=%.2f, Z=%.2f\n", gx_offset, gy_offset, gz_offset);
+    setup_gpio_int_config_only();
+
+    // Reset + config
+    i2c_write(CTRL3_C, 0x01);
+    MXC_Delay(MXC_DELAY_MSEC(20)); // <- give it time after reset
+    i2c_write(CTRL3_C, 0x44);      // BDU=1, IF_INC=1
+    i2c_write(CTRL2_G, 0x00);      // gyro off
+    i2c_write(CTRL1_XL, 0x40);     // accel 104Hz
+    i2c_write(DRDY_PULSE_CFG_G, 0x00);
+    i2c_write(INT1_CTRL, 0x01);    // XL_DRDY -> INT1
+
+    uint8_t st = 0; i2c_read(STATUS_REG, &st, 1);
+    enable_imu_gpio_irq();
+    MXC_Delay(MXC_DELAY_MSEC(100));
+
+  
   if ((err = MXC_CLI_Init(MXC_UART_GET_UART(CONSOLE_UART), user_commands,
                           num_user_commands)) != E_NO_ERROR)
   {
@@ -458,6 +511,7 @@ int main(void)
   MXC_TMR_Start(MXC_TMR1);
   static uint32_t last_call = 0;
   setupMax30009Interrupt();
+    const double LSB_G = 0.061 / 1000.0;
 
   while (1)
   {
@@ -465,69 +519,65 @@ int main(void)
     // uint32_t start = MXC_TMR_GetCount(MXC_TMR1);
 
     wsfOsDispatcher();
-    if (interrupt)
-    {
-      if (sample_ready)
-      {
-        sample_ready = 0;
+    /* ---------- IMU SERVICE ---------- */
+        if (imu_drdy_flag && recordingIMU) {
+            imu_drdy_flag = false;
+            uint8_t raw[6];
+            int rc = i2c_read(OUTX_L_XL, raw, 6);
+            if (rc != 0) {
+                // printf("[I2C ERR] rc=%d\n", rc);
+                imu_err_streak++;
+                if (imu_err_streak >= 3) {
+                    // printf("Reinitializing I2C...\n");
+                    MXC_I2C_Shutdown(I2C_MASTER);
+                    MXC_I2C_Init(I2C_MASTER, 1, 0);
+                    MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
+                    imu_err_streak = 0;
+                }
+            } else {
+                imu_err_streak = 0;
+                (void)i2c_read(STATUS_REG, &st, 1);
 
-        // Read accel
-        uint8_t acc_raw[6];
-        for (int i = 0; i < 6; ++i)
-          i2c_read(OUTX_L_XL + i, &acc_raw[i], 1);
-        int16_t ax = (int16_t)(acc_raw[1] << 8 | acc_raw[0]);
-        int16_t ay = (int16_t)(acc_raw[3] << 8 | acc_raw[2]);
-        int16_t az = (int16_t)(acc_raw[5] << 8 | acc_raw[4]);
+                int16_t ax = (int16_t)((raw[1]<<8)|raw[0]);
+                int16_t ay = (int16_t)((raw[3]<<8)|raw[2]);
+                int16_t az = (int16_t)((raw[5]<<8)|raw[4]);
+                // printf("g: X=%.3f Y=%.3f Z=%.3f\n",
+                //        (double)ax*LSB_G, (double)ay*LSB_G, (double)az*LSB_G);
+                char log_entry[128];
 
-        // Read gyro
-        uint8_t gyr_raw[6];
-        for (int i = 0; i < 6; ++i)
-          i2c_read(OUTX_L_G + i, &gyr_raw[i], 1);
-        int16_t gx = (int16_t)(gyr_raw[1] << 8 | gyr_raw[0]);
-        int16_t gy = (int16_t)(gyr_raw[3] << 8 | gyr_raw[2]);
-        int16_t gz = (int16_t)(gyr_raw[5] << 8 | gyr_raw[4]);
+                // Format the log entry with timestamp, Q, I, and F_BIOZ
+                int log_len = snprintf(log_entry, sizeof(log_entry), "%.2f,%.2f,%.2f\n", (double)ax*LSB_G, (double)ay*LSB_G, (double)az*LSB_G);
 
-        // Convert accel
-        float ax_g = ax * 0.061f / 1000.0f;
-        float ay_g = ay * 0.061f / 1000.0f;
-        float az_g = az * 0.061f / 1000.0f;
+                datsSendData(AppConnIsOpen(),log_entry,log_len);
+                UINT written;
+                int err = 0;
+                if ((err = f_write(&imuFile, log_entry, log_len, &written)) != FR_OK || written != log_len)
+                {
+                  printf("Write failed: %s\n", FF_ERRORS[err]);
+                  return err;
+                }
+            }
 
-        // Convert gyro (raw) and subtract bias
-        float gx_dps = gx * 8.75f / 1000.0f - gx_offset;
-        float gy_dps = gy * 8.75f / 1000.0f - gy_offset;
-        float gz_dps = gz * 8.75f / 1000.0f - gz_offset;
+            /* Ensure DRDY line cleared before re-enabling */
+            while (MXC_GPIO_InGet(IMU_INT_PORT, IMU_INT_MASK));
+            MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
+            MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
+        }
 
-        imu_data_t data = {
-            .ax = ax_g,
-            .ay = ay_g,
-            .az = az_g,
-            .gx = gx_dps,
-            .gy = gy_dps,
-            .gz = gz_dps,
-        };
-        spiBurst(&data);
-
-        current_freq = !current_freq;
-        setFreq(current_freq);
-        interrupt = 0;
-        // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
-        // uint32_t delta = end - start;
-        // printf("time for burst: %lu cycles\n", delta);
-      }
-      else
-      {
-        sample_index++;
-        samples_discarded++;
-        spiBurstnoPrint();
-        // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
-        // uint32_t delta = end - start;
-        interrupt = 0;
-        // printf("time for discarded burst: %lu cycles\n", delta);
-      }
-      // uint32_t now = MXC_TMR_GetCount(MXC_TMR1);
-      // uint32_t delta = now - last_call;
-      // printf("Time since last burst: %lu cycles\n", delta);
-      // last_call = now;
+        /* ---------- BIOZ SERVICE ---------- */
+        if (interrupt) {
+            if (sample_ready) {
+                sample_ready = 0;
+                spiBurst(getBiozFreq());
+                current_freq = !current_freq;
+                setFreq(current_freq);
+            } else {
+                sample_index++;
+                samples_discarded++;
+                spiBurstnoPrint();
+            }
+            interrupt = 0;
+        }
 
       wsfOsDispatcher();
 
@@ -536,7 +586,7 @@ int main(void)
         WsfTimerSleep();
       }
     }
-  }
+  
   printf("error count = %d\n", errCnt);
 
   shutdownSPI();

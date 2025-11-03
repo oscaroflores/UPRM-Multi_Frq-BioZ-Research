@@ -25,8 +25,8 @@
 #include "sdhc.h"
 #include "user-cli.h"
 #include <stdlib.h>
-#include "time.h"
-#include "rtc.h"
+#import "time.h"
+#import "rtc.h"
 const command_t user_commands[] = {
     {"size", "size", "Find the Size of the SD Card and Free Space",
      handle_size},
@@ -44,11 +44,11 @@ const command_t user_commands[] = {
     {"start", "start", "Start recording", handle_start},
     {"stop", "stop", "Stop recording", handle_stop},
 };
-
+extern FIL imuFile;
 extern int sample_index; // Declare sample_index as extern to access it in other files
 const unsigned int num_user_commands =
     sizeof(user_commands) / sizeof(command_t);
-
+volatile bool recordingIMU = false;
 int handle_size(int argc, char *argv[])
 {
   if (argc != 1)
@@ -233,26 +233,46 @@ int handle_start(int argc, char *argv[])
   FRESULT err;
   if ((err = createNextBiozLogFile()) != FR_OK)
     return err;
-  if ((err = openLogFile()) != FR_OK)
+
+if ((err = openLogFile()) != FR_OK)
     return err;
 
-  changeReg(0x20, 0x7, 2, 3);
-  return E_NO_ERROR;
+if ((err = createNextIMULogFile()) != FR_OK)
+    return err;
+
+// OR use openIMULogFile() directly if it doesn't auto-create:
+if ((err = openIMULogFile(imu_log_file)) != FR_OK)
+    return err;
+
+
+
+    changeReg(0x20, 0x7, 2, 3);
+    // recording = true;
+    recordingIMU = true;
+
+    return E_NO_ERROR;
 }
 
 int handle_stop(int argc, char *argv[])
 {
-  if (argc != 1)
-  {
-    printf("Incorrect usage. No parameters needed.\n");
-    return E_INVALID;
-  }
+    if (argc != 1) {
+        printf("Incorrect usage. No parameters needed.\n");
+        return E_INVALID;
+    }
 
-  // Disable sampling
-  changeReg(0x20, 0x0, 2, 3);
+    // Stop both sensors
+    changeReg(0x20, 0x0, 2, 3);
+    // recording = false;
+    recordingIMU = false;
 
-  // Close file
-  closeLogFile();
+    // Close BioZ file
+    closeLogFile();
 
-  return E_NO_ERROR;
+    // Close IMU file if open
+    f_close(&imuFile);
+
+    
+
+    return E_NO_ERROR;
 }
+

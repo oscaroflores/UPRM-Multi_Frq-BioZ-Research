@@ -22,10 +22,6 @@
 #include "att_api.h"
 #include "dats_api.h"
 #include "app_api.h"
-#include "bioZ.h"
-
-#define M_PI 3.14159265358979323846
-
 uint32_t start_time_ms;
 
 extern int current_freq_kHz;
@@ -419,7 +415,7 @@ double convertCountsToOhms(double count)
  *
  * @return 0 on success, 1 for invalid data, 2 for marker, or 3 for error.
  */
-int calcBioZ(uint8_t buf[], imu_data_t *data)
+int calcBioZ(uint8_t buf[], double freqLogged)
 {
 
   uint8_t x1[3], x2[3];
@@ -539,7 +535,7 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
   // printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
 
   // -- Print the results to terminal --
-  // printf("%lu\n", timestamp);
+  // printf("%lu\t", timestamp);
   // printf("%.1f\t", Q_ohm);
   // printf("%.1f\t", I_ohm);
   // printf("%.1f\n", F_BIOZ);
@@ -550,13 +546,7 @@ int calcBioZ(uint8_t buf[], imu_data_t *data)
   char log_entry[128];
 
   // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(
-      log_entry,
-      sizeof(log_entry),
-      "%lu,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
-      timestamp, Q_ohm, I_ohm, F_BIOZ,
-      data->ax, data->ay, data->az,
-      data->gx, data->gy, data->gz);
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
 
   // Send log entry via BLE
   datsSendData(AppConnIsOpen(), log_entry, log_len);

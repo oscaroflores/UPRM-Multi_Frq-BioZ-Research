@@ -19,8 +19,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "spiFunctions.h"
-
 extern bool isRecording; // Global variable to track recording state
 /***** Definitions *****/
 #define SPI_SPEED 1000000 // Bit Rate
@@ -103,7 +101,7 @@ uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
 
 
   */
-  MXC_Delay(MXC_DELAY_USEC(75));
+  MXC_Delay(MXC_DELAY_USEC(100));
 
   int err;
 
@@ -238,7 +236,7 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits)
   regWrite(regAddr, newBits);
 }
 
-int spiBurst(imu_data_t *data)
+int spiBurst(double freqLogged)
 {
   uint8_t regAddr = 0x0C;
   int err = 0;
@@ -293,7 +291,7 @@ int spiBurst(imu_data_t *data)
         gHold[5] = rx_buf[i + 2];
         i += 2;
 
-        calcBioZ(gHold, data);
+        calcBioZ(gHold, freqLogged);
       }
     }
   }

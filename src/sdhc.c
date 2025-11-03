@@ -31,7 +31,8 @@ FILINFO fno; // FFat File Information Object
 DIR dir;     // FFat Directory Object
 TCHAR *FF_ERRORS[20];
 BYTE work[4096];
-
+FIL imuFile;             // File handle for IMU log
+UINT imu_bytes_written;
 DWORD clusters_free = 0, sectors_free = 0, sectors_total = 0, volume_sn = 0;
 UINT bytes_written = 0, bytes_read = 0, mounted = 0;
 
@@ -41,6 +42,7 @@ TCHAR message[MAXLEN], directory[MAXLEN], cwd[MAXLEN], filename[MAXLEN], volume_
 mxc_gpio_cfg_t SDPowerEnablePin = {MXC_GPIO1, MXC_GPIO_PIN_12, MXC_GPIO_FUNC_OUT,
                                    MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO};
 char new_log_file[64];
+char imu_log_file[64];
 
 // /***** FUNCTIONS *****/
 
@@ -479,6 +481,58 @@ int createNextBiozLogFile()
 
     return FR_OK;
 }
+int createNextIMULogFile()
+{
+    if (!mounted) {
+        mount();
+    }
+
+    int err;
+    FRESULT res;
+    char file_prefix[] = "imu-log-";
+    char file_extension[] = ".csv";
+    char temp_filename[MAXLEN];
+
+    // Get RTC seconds
+    uint32_t sec;
+    if (MXC_RTC_GetSeconds(&sec) != E_NO_ERROR) {
+        printf("RTC read failed.\n");
+        return -1;
+    }
+    time_t rawtime = sec;
+    struct tm *timeinfo = localtime(&rawtime);
+
+    snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%02d%02d%02d%s",
+             file_prefix,
+             timeinfo->tm_year + 1900,
+             timeinfo->tm_mon + 1,
+             timeinfo->tm_mday,
+             timeinfo->tm_hour,
+             timeinfo->tm_min,
+             timeinfo->tm_sec,
+             file_extension);
+
+    snprintf(imu_log_file, MAXLEN, "%s", temp_filename);
+
+    if ((res = f_open(&imuFile, (const TCHAR *)temp_filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+        printf("Error creating IMU file: %s\n", FF_ERRORS[res]);
+        return res;
+    }
+
+    const char *csv_header = "ax,ay,az\n";
+    if ((res = f_write(&imuFile, csv_header, strlen(csv_header), &imu_bytes_written)) != FR_OK) {
+        printf("Error writing IMU header: %s\n", FF_ERRORS[res]);
+        f_close(&imuFile);
+        return res;
+    }
+
+    if ((res = f_close(&imuFile)) != FR_OK) {
+        printf("Error closing IMU file: %s\n", FF_ERRORS[res]);
+        return res;
+    }
+
+    return FR_OK;
+}
 
 void waitCardInserted()
 {
@@ -511,11 +565,26 @@ int openLogFile()
         mount();
 
     err = f_open(&file, new_log_file, FA_OPEN_APPEND | FA_WRITE);
+
     if (err != FR_OK)
     {
         printf("Error opening log file: %s\n", FF_ERRORS[err]);
         return err;
     }
+    return FR_OK;
+}
+int openIMULogFile(const char *imu_filename)
+{
+    if (!mounted)
+        mount();
+
+    FRESULT err = f_open(&imuFile, imu_filename, FA_OPEN_APPEND | FA_WRITE);
+    if (err != FR_OK) {
+        printf("Error opening IMU log: %s\n", FF_ERRORS[err]);
+        return err;
+    }
+
+    printf("Opened IMU log: %s\n", imu_filename);
     return FR_OK;
 }
 
@@ -532,6 +601,6 @@ int closeLogFile()
     {
         printf("Error closing log file: %s\n", FF_ERRORS[err]);
     }
-
+    err = f_sync(&imuFile);
     return err;
 }

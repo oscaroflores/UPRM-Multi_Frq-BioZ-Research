@@ -1,6 +1,3 @@
-#ifndef SPI_FUNCTIONS_H
-#define SPI_FUNCTIONS_H
-
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -18,19 +15,11 @@
 #include "mxc_pins.h"
 #include "spi.h"
 
-typedef struct
-{
-    float ax, ay, az;
-    float gx, gy, gz;
-} imu_data_t;
-
 void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits);
 int initSPI();
 void regWrite(uint8_t regAddr, uint8_t val);
 int regRead(uint8_t regAddr);
 int shutdownSPI();
-int spiBurst(imu_data_t *data);
+int spiBurst(double freqLogged);
 uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, uint8_t rx_len);
 int spiBurstnoPrint();
-
-#endif
