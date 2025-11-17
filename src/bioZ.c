@@ -124,29 +124,29 @@ void BIAsettings() {
   
   // --- DAC/ADC OSR Config ---
   regWrite(0x20,
-    0xA0); // DAC_OSR = 2 (128), ADC_OSR = 5 (256), BG_EN, Q_EN, I_EN = 0
-    
-    // --- Note: Must call setFreq() after this to finalize DAC/ADC and KDIV
-    // settings
-    changeReg(0x17, 0, 5, 1); // NDIV = 0 (512)
-    setMdiv(512);
-    
-    
-    // Register settings to calculate offsets
-    // REMEMBER TO COMMENT OUT PREVIOUS 0x22 regWrite()
-    // regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
-    // regWrite(0x25, (1 << 5));
-    
-    
-    // Register settings for in-phase calib
-    // regWrite(0x41, (1 << 2) | (0 << 1) | (1 << 0)); // Enable calibration ports
-    // regWrite(0x25, (0 << 5));
-    // regWrite(0x28, (1 << 3));
-    
-    // Register settings for quad-phase calib
-    // regWrite(0x41, (0 << 2) | (1 << 1) | (1 << 0)); // Enable calibration ports
-    // regWrite(0x28, (0 << 3));
-    // regWrite(0x28, (1 << 2));
+    0xB8); // DAC_OSR = (128), ADC_OSR = (1024), BG_EN, Q_EN, I_EN = 0
+    // PARA MULT FREQ 0X20 ES 0XA0
+  // --- Note: Must call setFreq() after this to finalize DAC/ADC and KDIV
+  // settings
+  changeReg(0x17, 0, 5, 1); // NDIV = 0 (512)
+  setMdiv(512);
+  
+  
+  // Register settings to calculate offsets
+  // REMEMBER TO COMMENT OUT PREVIOUS 0x22 regWrite()
+  // regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
+  // regWrite(0x25, (1 << 5));
+  
+  
+  // Register settings for in-phase calib
+  // regWrite(0x41, (1 << 2) | (0 << 1) | (1 << 0)); // Enable calibration ports
+  // regWrite(0x25, (0 << 5));
+  // regWrite(0x28, (1 << 3));
+  
+  // Register settings for quad-phase calib
+  // regWrite(0x41, (0 << 2) | (1 << 1) | (1 << 0)); // Enable calibration ports
+  // regWrite(0x28, (0 << 3));
+  // regWrite(0x28, (1 << 2));
 }
 
 /**

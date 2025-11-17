@@ -97,7 +97,7 @@ vital signs depending on necessities
 float gx_offset = 0, gy_offset = 0, gz_offset = 0;
 
 /***** Globals *****/
-bool current_freq = 0;
+bool current_freq = 0; // si es 0 es 32 khz y si es 1 es 131khz 
 volatile bool recording = false;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
@@ -471,42 +471,6 @@ int main(void)
   MXC_TMR_Start(MXC_TMR1);
   static uint32_t last_call = 0;
   setupMax30009Interrupt();
-
-  // // Calibrate MAX30009
-  // printf("Starting 4 kHz calibration.\n");
-
-  // printf("DEBUG: in_calibration flag: %d\n", in_calibration);
-
-  // setFreq(0); // 4kHz
-  // double freq = getBiozFreq();
-  // printf("Frequency set for %.2f\n", freq);
-
-  // // offsets
-  // regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
-  // regWrite(0x25, (1 << 5));
-  // regWrite(0x20, (1 << 0) | (1 << 1));
-
-  // // record data until settled and then record average impedance to i_offset and
-  // // q_offset
-  // double period = getSampleInterval();
-  // int settling_time = (int)(period * 64);
-  // changeReg(0x20, 0x7, 2, 3);
-  // MXC_Delay(MXC_DELAY_SEC(settling_time)); // let sampling settle
-  // // empty fifo
-  // // record average I and average Q
-  // MXC_Delay(MXC_DELAY_SEC(settling_time)); // accumulate samples
-  // spiBurst();
-  // // stop measuring
-  // changeReg(0x20, 0x0, 2, 3);
-  // // use gHold[] data
-
-  // printf("[DEBUG] Printing calib queue: \n");
-  
-  // printf("Calibration concluded successfully\n - I offset: %d\n - Q offset: "
-  //   "%d\n - I magnitude coefficient: %d\n - Q magnitude coefficient: %d\n "
-  //   "- I phase coefficient: %d\n - Q phase coefficient: %d\n",
-  //   i_offset, q_offset, i_mag_coef, q_mag_coef, i_phase_coef,
-  //   q_phase_coef);
     
     while (1)
     {
@@ -516,67 +480,30 @@ int main(void)
       wsfOsDispatcher();
     if (interrupt)
     {
-      if (sample_ready)
-      {
-        sample_ready = 0;
+      // if (sample_ready)
+      // {
+      //   sample_ready = 0;
 
-        if (i2c_connected)
-        {
-
-          // Read accel
-          uint8_t acc_raw[6];
-          for (int i = 0; i < 6; ++i)
-            i2c_read(OUTX_L_XL + i, &acc_raw[i], 1);
-          int16_t ax = (int16_t)(acc_raw[1] << 8 | acc_raw[0]);
-          int16_t ay = (int16_t)(acc_raw[3] << 8 | acc_raw[2]);
-          int16_t az = (int16_t)(acc_raw[5] << 8 | acc_raw[4]);
-  
-          // Read gyro
-          uint8_t gyr_raw[6];
-          for (int i = 0; i < 6; ++i)
-            i2c_read(OUTX_L_G + i, &gyr_raw[i], 1);
-          int16_t gx = (int16_t)(gyr_raw[1] << 8 | gyr_raw[0]);
-          int16_t gy = (int16_t)(gyr_raw[3] << 8 | gyr_raw[2]);
-          int16_t gz = (int16_t)(gyr_raw[5] << 8 | gyr_raw[4]);
-  
-          // Convert accel
-          float ax_g = ax * 0.061f / 1000.0f;
-          float ay_g = ay * 0.061f / 1000.0f;
-          float az_g = az * 0.061f / 1000.0f;
-  
-          // Convert gyro (raw) and subtract bias
-          float gx_dps = gx * 8.75f / 1000.0f - gx_offset;
-          float gy_dps = gy * 8.75f / 1000.0f - gy_offset;
-          float gz_dps = gz * 8.75f / 1000.0f - gz_offset;
-  
-          imu_data_t data = {
-              .ax = ax_g,
-              .ay = ay_g,
-              .az = az_g,
-              .gx = gx_dps,
-              .gy = gy_dps,
-              .gz = gz_dps,
-          };
-        }
+        
         spiBurst();
 
-        current_freq = !current_freq;
-        setFreq(current_freq);
+        // current_freq = !current_freq;
+        // setFreq(current_freq); ///////////////////////////////////////////////////////////////////////////////////////////////////////
         interrupt = 0;
         // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
         // uint32_t delta = end - start;
         // printf("time for burst: %lu cycles\n", delta);
-      }
-      else
-      {
-        sample_index++;
-        samples_discarded++;
-        spiBurstnoPrint();
-        // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
-        // uint32_t delta = end - start;
-        interrupt = 0;
-        // printf("time for discarded burst: %lu cycles\n", delta);
-      }
+      // }
+      // else
+      // {
+      //   sample_index++;
+      //   samples_discarded++;
+      //   spiBurstnoPrint();
+      //   // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+      //   // uint32_t delta = end - start;
+      //   interrupt = 0;
+      //   // printf("time for discarded burst: %lu cycles\n", delta);
+      // }
       // uint32_t now = MXC_TMR_GetCount(MXC_TMR1);
       // uint32_t delta = now - last_call;
       // printf("Time since last burst: %lu cycles\n", delta);
