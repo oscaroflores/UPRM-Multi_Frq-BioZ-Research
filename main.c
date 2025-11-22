@@ -97,7 +97,7 @@ vital signs depending on necessities
 float gx_offset = 0, gy_offset = 0, gz_offset = 0;
 
 /***** Globals *****/
-bool current_freq = 0; // si es 0 es 32 khz y si es 1 es 131khz 
+bool current_freq = 1; // si es 0 DRIVE es 4 khz y si es 1 es 131khz 
 volatile bool recording = false;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
@@ -471,6 +471,21 @@ int main(void)
   MXC_TMR_Start(MXC_TMR1);
   static uint32_t last_call = 0;
   setupMax30009Interrupt();
+
+  in_calibration = true;
+
+  // Register settings to calculate offsets
+  regWrite(0x22, 0x00);
+  regWrite(0x25, 0b11101010);
+  
+  // // Register settings for in-phase calib
+  // regWrite(0x41, 0b00000111); // Enable calibration ports
+  // regWrite(0x25, 0b11001010);
+  // regWrite(0x28, 0b00011010);
+  
+  // // Register settings for quad-phase calib
+  // regWrite(0x41, 0b00000111); // Enable calibration ports
+  // regWrite(0x28, 0b00010110);
     
     while (1)
     {

@@ -208,6 +208,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 self.x_data[freq].append(t)
                 self.q_data[freq].append(q)
                 self.i_data[freq].append(i)
+                print(f"{freq} {i} {q}")
             self.pending_data[freq] = []
 
             for arr in [self.x_data, self.q_data, self.i_data]:

@@ -103,7 +103,7 @@ void BIAsettings() {
   regWrite(0x13, 0x00); // No Lead-Off Comparator
   regWrite(0x14, 0x00); // Reserved
   regWrite(0x21, 0x20); // HIZ after reset
-  regWrite(0x22, 0x28); // BIOZ_VDRV_MAG = 2 (2.5x), BIOZ_IDRV_RGE = 2 (32uA)
+  regWrite(0x22, 0b00101000); // BIOZ_VDRV_MAG = 2 (2.5x), BIOZ_IDRV_RGE = 2 (32uA)
   regWrite(0x23, 0x00); // default
   regWrite(0x24, 0x33); // Amp Biasing
   regWrite(0x25, 0xCA); // AMP_RGE and bandwidth
@@ -121,32 +121,17 @@ void BIAsettings() {
   // --- Interrupt Setup ---
   regWrite(0x80, 0xA0); // Enable A_FULL_EN and FIFO_DATA_RDY_EN
   regWrite(0x81, 0x00); // Optional: disable error interrupts for now
-  
+
   // --- DAC/ADC OSR Config ---
   regWrite(0x20,
     0xB8); // DAC_OSR = (128), ADC_OSR = (1024), BG_EN, Q_EN, I_EN = 0
-    // PARA MULT FREQ 0X20 ES 0XA0
+    // PARA MULT FREQ 0X20 ES 0xA0
+    // PARA SINGLE FREQ 0x20 es 0xB8
+  
   // --- Note: Must call setFreq() after this to finalize DAC/ADC and KDIV
   // settings
   changeReg(0x17, 0, 5, 1); // NDIV = 0 (512)
   setMdiv(512);
-  
-  
-  // Register settings to calculate offsets
-  // REMEMBER TO COMMENT OUT PREVIOUS 0x22 regWrite()
-  // regWrite(0x22, (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2));
-  // regWrite(0x25, (1 << 5));
-  
-  
-  // Register settings for in-phase calib
-  // regWrite(0x41, (1 << 2) | (0 << 1) | (1 << 0)); // Enable calibration ports
-  // regWrite(0x25, (0 << 5));
-  // regWrite(0x28, (1 << 3));
-  
-  // Register settings for quad-phase calib
-  // regWrite(0x41, (0 << 2) | (1 << 1) | (1 << 0)); // Enable calibration ports
-  // regWrite(0x28, (0 << 3));
-  // regWrite(0x28, (1 << 2));
 }
 
 /**
@@ -292,9 +277,16 @@ double getBiozGain() {
  */
 double getBiozCurrent_uA() {
   uint8_t reg_val = regRead(0x22);
+  uint8_t vdrv_mag_bits;
+  uint8_t idrv_rge_bits;
 
-  uint8_t vdrv_mag_bits = (reg_val >> 4) & 0x03; // bits 5:4
-  uint8_t idrv_rge_bits = (reg_val >> 2) & 0x03; // bits 3:2
+  if (in_calibration) { // hard-coded values
+    vdrv_mag_bits = 0b10;
+    idrv_rge_bits = 0b10;
+  } else {
+    vdrv_mag_bits = (reg_val >> 4) & 0x03; // bits 5:4
+    idrv_rge_bits = (reg_val >> 2) & 0x03; // bits 3:2
+  }
 
   // VDRV_MAG mV values
   const double vdrv_mag_mv[] = {50.0, 100.0, 250.0, 500.0}; // in mV
@@ -532,11 +524,7 @@ int calcBioZ(uint8_t buf[]) {
   double F_BIOZ = getBiozFreq();
   double M = getMdiv();
 
-  printf("%.2f %.2f %.2f", F_BIOZ, I, Q);
-  printf(" %d", M);
-  printf(" %d", getRefClkHz());
-  printf(" %d", getDACOSR());
-  printf(" %d\n", getKDiv());
+  // printf("%.2f %.2f %.2f\n", F_BIOZ, I, Q);
 
   // --- Timestamp using sample index and sr_bioz ---
   uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
@@ -553,7 +541,7 @@ int calcBioZ(uint8_t buf[]) {
   char log_entry[128];
 
   // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n",
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.5f,%.5f,%.5f\n",
                          timestamp, Q_ohm, I_ohm, F_BIOZ);
 
   // Send log entry via BLE
@@ -595,10 +583,12 @@ int calcBioZ(uint8_t buf[]) {
   printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
 
   // -- Print the results to terminal --
-  printf("%lu\n", timestamp);
-  printf("%.1f\t", Q_ohm);
-  printf("%.1f\t", I_ohm);
-  printf("%.1f\n", F_BIOZ);
+  printf("timestamp: %lu\n", timestamp);
+  printf("Q value in Ohms: %.1f\t", Q_ohm);
+  printf("I value in Ohms: %.1f\t", I_ohm);
+  printf("Frequency: %.1f\n", F_BIOZ);
   printf("%d\n", regRead(0x0A) & 0x80);
   printf("phase: %f\n", phase_deg);
+
+  return err;
 }
