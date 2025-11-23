@@ -26,6 +26,10 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.q_data = {f: [] for f in self.freqs}
         self.i_data = {f: [] for f in self.freqs}
         self.pending_data = {f: [] for f in self.freqs}
+        self.accel_time = []
+        self.accel_data = {"x": [], "y": [], "z": []}
+        self.pending_accel = []
+        self.accel_index = 0
         self.log_file = None
         self.recording = False
 
@@ -65,6 +69,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         # Graphs
         self.tabs = QtWidgets.QTabWidget()
         self.graphs, self.curves, self.scatters = [], [], []
+        self.accel_graphs, self.accel_curves, self.accel_scatters = [], [], []
         colors = ['y', 'g', 'c', 'r']
         for idx, freq in enumerate(self.freqs):
             tab = QtWidgets.QWidget()
@@ -79,6 +84,23 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 self.scatters.append(s)
                 vbox.addWidget(g)
             self.tabs.addTab(tab, f"{freq} Hz")
+
+        accel_tab = QtWidgets.QWidget()
+        accel_layout = QtWidgets.QVBoxLayout(accel_tab)
+        accel_colors = ['#e67e22', '#2980b9', '#2ecc71']
+        for label, color in zip(["Accel X", "Accel Y", "Accel Z"], accel_colors):
+            g = pg.PlotWidget(title=label)
+            c = g.plot(pen=color)
+            s = pg.ScatterPlotItem(brush=color, size=5)
+            g.addItem(s)
+            accel_layout.addWidget(g)
+            self.accel_graphs.append(g)
+            self.accel_curves.append(c)
+            self.accel_scatters.append(s)
+            self.graphs.append(g)
+            self.curves.append(c)
+            self.scatters.append(s)
+        self.tabs.addTab(accel_tab, "Accelerometer")
         layout.addWidget(self.tabs)
 
         self.scan_button.clicked.connect(self.scan_devices)
@@ -104,6 +126,11 @@ class BLEBioZPlotter(QtWidgets.QWidget):
             self.q_data[f].clear()
             self.i_data[f].clear()
             self.pending_data[f].clear()
+        self.accel_time.clear()
+        for axis in self.accel_data:
+            self.accel_data[axis].clear()
+        self.pending_accel.clear()
+        self.accel_index = 0
         for c in self.curves: c.setData([], [])
         for s in self.scatters: s.setData([], [])
 
@@ -220,6 +247,30 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 self.graphs[idx * 2].setXRange(xmin, xmax, padding=0.01)
                 self.graphs[idx * 2 + 1].setXRange(xmin, xmax, padding=0.01)
 
+        if self.pending_accel:
+            for ax, ay, az in self.pending_accel:
+                self.accel_time.append(self.accel_index)
+                self.accel_index += 1
+                self.accel_data["x"].append(ax)
+                self.accel_data["y"].append(ay)
+                self.accel_data["z"].append(az)
+            self.pending_accel = []
+
+            if len(self.accel_time) > self.window_size:
+                self.accel_time = self.accel_time[-self.window_size:]
+                for axis in self.accel_data:
+                    self.accel_data[axis] = self.accel_data[axis][-self.window_size:]
+
+            for idx, axis in enumerate(["x", "y", "z"]):
+                self.accel_curves[idx].setData(self.accel_time, self.accel_data[axis])
+                self.accel_scatters[idx].setData(self.accel_time, self.accel_data[axis])
+
+            if len(self.accel_time) >= 10:
+                xmin = self.accel_time[0]
+                xmax = self.accel_time[-1]
+                for g in self.accel_graphs:
+                    g.setXRange(xmin, xmax, padding=0.01)
+
     async def debug_start_wrapper(self):
         print("[DEBUG] Calling send_start() coroutine")
         await self.send_start()
@@ -248,6 +299,16 @@ class BLEBioZPlotter(QtWidgets.QWidget):
 
             # handle data in the format: timestamp,q,i,freq
             parts = line.split(",")
+            if len(parts) == 3:
+                try:
+                    cleaned = [p.strip().replace("(", "").replace(")", "") for p in parts]
+                    vals = [float(p) for p in cleaned]
+                    self.pending_accel.append(tuple(vals))
+                except ValueError:
+                    pass  # Not accel data, fall through
+                else:
+                    return
+
             if len(parts) != 4:
                 return
             timestamp, q, i, freq = map(float, parts)

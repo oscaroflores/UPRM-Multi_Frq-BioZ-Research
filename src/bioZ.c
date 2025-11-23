@@ -415,7 +415,7 @@ double convertCountsToOhms(double count)
  *
  * @return 0 on success, 1 for invalid data, 2 for marker, or 3 for error.
  */
-int calcBioZ(uint8_t buf[], double freqLogged)
+int calcBioZ(uint8_t buf[], bool freqLogged)
 {
 
   uint8_t x1[3], x2[3];
@@ -510,10 +510,10 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   sample_index++;
 
   // Convert to Ohms
-  double I_ohm = convertCountsToOhms(I);
-  double Q_ohm = convertCountsToOhms(Q);
-  // freq calc
-  double F_BIOZ = getBiozFreq();
+  // double I_ohm = convertCountsToOhms(I);
+  // double Q_ohm = convertCountsToOhms(Q);
+  // // freq calc
+  // double F_BIOZ = getBiozFreq();
   // debug calcs
 
   // double phase_rad = atan2(Q_ohm, I_ohm);
@@ -546,7 +546,7 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   char log_entry[128];
 
   // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q, I, freqLogged ? 131328.0 : 4104.0);
 
   // Send log entry via BLE
   datsSendData(AppConnIsOpen(), log_entry, log_len);

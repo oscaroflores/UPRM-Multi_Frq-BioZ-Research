@@ -236,7 +236,7 @@ void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits)
   regWrite(regAddr, newBits);
 }
 
-int spiBurst(double freqLogged)
+int spiBurst(bool freqLogged)
 {
   uint8_t regAddr = 0x0C;
   int err = 0;
