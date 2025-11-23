@@ -85,7 +85,7 @@ vital signs depending on necessities
 
 /*** I2C / LSM6DSL ***/
 #define I2C_MASTER MXC_I2C2
-#define I2C_FREQ 400000
+#define I2C_FREQ 1000000
 #define LSM6DSL_ADDR 0x6A // use 0x6A if SA0/SDO is low
 
 // Registers
@@ -532,57 +532,57 @@ int main(void)
       interrupt = 0;
     }
     /* ---------- IMU SERVICE ---------- */
-    if (imu_drdy_flag && recordingIMU)
-    {
-      imu_drdy_flag = false;
-      uint8_t raw[6];
-      int rc = i2c_read(OUTX_L_XL, raw, 6);
-      if (rc != 0)
-      {
-        // printf("[I2C ERR] rc=%d\n", rc);
-        imu_err_streak++;
-        if (imu_err_streak >= 3)
-        {
-          // printf("Reinitializing I2C...\n");
-          MXC_I2C_Shutdown(I2C_MASTER);
-          MXC_I2C_Init(I2C_MASTER, 1, 0);
-          MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
-          imu_err_streak = 0;
-        }
-      }
-      else
-      {
-        imu_err_streak = 0;
-        (void)i2c_read(STATUS_REG, &st, 1);
+    // if (imu_drdy_flag && recordingIMU)
+    // {
+    //   imu_drdy_flag = false;
+    //   uint8_t raw[6];
+    //   int rc = i2c_read(OUTX_L_XL, raw, 6);
+    //   if (rc != 0)
+    //   {
+    //     // printf("[I2C ERR] rc=%d\n", rc);
+    //     imu_err_streak++;
+    //     if (imu_err_streak >= 3)
+    //     {
+    //       // printf("Reinitializing I2C...\n");
+    //       MXC_I2C_Shutdown(I2C_MASTER);
+    //       MXC_I2C_Init(I2C_MASTER, 1, 0);
+    //       MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
+    //       imu_err_streak = 0;
+    //     }
+    //   }
+    //   else
+    //   {
+    //     imu_err_streak = 0;
+    //     (void)i2c_read(STATUS_REG, &st, 1);
 
-        int16_t ax = (int16_t)((raw[1] << 8) | raw[0]);
-        int16_t ay = (int16_t)((raw[3] << 8) | raw[2]);
-        int16_t az = (int16_t)((raw[5] << 8) | raw[4]);
-        // printf("g: X=%.3f Y=%.3f Z=%.3f\n",
-        //        (double)ax*LSB_G, (double)ay*LSB_G, (double)az*LSB_G);
-        char log_entry[128];
+    //     int16_t ax = (int16_t)((raw[1] << 8) | raw[0]);
+    //     int16_t ay = (int16_t)((raw[3] << 8) | raw[2]);
+    //     int16_t az = (int16_t)((raw[5] << 8) | raw[4]);
+    //     // printf("g: X=%.3f Y=%.3f Z=%.3f\n",
+    //     //        (double)ax*LSB_G, (double)ay*LSB_G, (double)az*LSB_G);
+    //     char log_entry[128];
 
-        // Format the log entry with timestamp, Q, I, and F_BIOZ
-        int log_len = snprintf(log_entry, sizeof(log_entry), "%.2f,%.2f,%.2f\n", (double)ax * LSB_G, (double)ay * LSB_G, (double)az * LSB_G);
+    //     // Format the log entry with timestamp, Q, I, and F_BIOZ
+    //     int log_len = snprintf(log_entry, sizeof(log_entry), "%.2f,%.2f,%.2f\n", (double)ax * LSB_G, (double)ay * LSB_G, (double)az * LSB_G);
 
-        datsSendData(AppConnIsOpen(), log_entry, log_len);
-        UINT written;
-        int err = 0;
-        if ((err = f_write(&imuFile, log_entry, log_len, &written)) != FR_OK || written != log_len)
-        {
-          printf("Write failed: %s\n", FF_ERRORS[err]);
-          return err;
-        }
-      }
+    //     datsSendData(AppConnIsOpen(), log_entry, log_len);
+    //     UINT written;
+    //     int err = 0;
+    //     if ((err = f_write(&imuFile, log_entry, log_len, &written)) != FR_OK || written != log_len)
+    //     {
+    //       printf("Write failed: %s\n", FF_ERRORS[err]);
+    //       return err;
+    //     }
+    //   }
 
-      /* Ensure DRDY line cleared before re-enabling */
-      while (MXC_GPIO_InGet(IMU_INT_PORT, IMU_INT_MASK))
-        ;
-      MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
-      MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
-    }
+    //   /* Ensure DRDY line cleared before re-enabling */
+    //   while (MXC_GPIO_InGet(IMU_INT_PORT, IMU_INT_MASK))
+    //     ;
+    //   MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
+    //   MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
+    // }
 
-    wsfOsDispatcher();
+    // wsfOsDispatcher();
 
     if (!WsfOsActive())
     {
