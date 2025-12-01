@@ -108,19 +108,25 @@ vital signs depending on necessities
 #define DEFAULT_TX_POWER 0 /* dBm */
 #define MXC_BASE_WUT0 ((uint32_t)0x40006400UL)
 #define MXC_WUT0 ((mxc_wut_regs_t *)MXC_BASE_WUT0)
+#define IMU_BUF_SIZE 128
+#define IMU_FLUSH_BATCH 1
+#define IMU_LOG_DECIM 3
+#define IMU_BLE_DECIM 10
+#define IMU_MAX_DRDY_PER_LOOP 1
+#define IMU_ODR_HZ 104
 
 /***** Globals *****/
 extern volatile bool recordingIMU;
 static uint8_t imu_err_streak = 0;
 extern FIL imuFile;
 
-static volatile int imu_drdy_flag = 0;
+static volatile uint16_t imu_drdy_count = 0;
 bool current_freq = 0;
 volatile bool recording = false;
 uint8_t gReadBuf[100];
 uint8_t gHold[100];
 int errCnt;
-bool interrupt = 0;
+volatile uint16_t bioz_irq_count = 0;
 extern uint32_t sample_interval_us;
 extern sample_index;
 int samples_discarded;
@@ -131,6 +137,20 @@ static LlRtCfg_t mainLlRtCfg;
 #endif
 
 volatile int wutTrimComplete;
+
+typedef struct
+{
+  uint32_t t_ms;
+  int16_t ax;
+  int16_t ay;
+  int16_t az;
+} imu_sample_t;
+
+static imu_sample_t imu_buf[IMU_BUF_SIZE];
+static uint16_t imu_buf_head = 0;
+static uint16_t imu_buf_tail = 0;
+static uint32_t imu_sample_total = 0;
+static uint32_t imu_sample_index = 0;
 
 extern void StackInitDats(void);
 
@@ -256,8 +276,10 @@ static int i2c_read(uint8_t reg, uint8_t *data, int len)
 static void imuISR(void *unused)
 {
   MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
-  MXC_GPIO_DisableInt(IMU_INT_PORT, IMU_INT_MASK); // <--- stop level-held retriggers
-  imu_drdy_flag = 1;
+  if (imu_drdy_count < UINT16_MAX)
+  {
+    imu_drdy_count++;
+  }
 }
 void GPIO1_IRQHandler(void) { MXC_GPIO_Handler(1); }
 
@@ -274,7 +296,7 @@ static void setup_gpio_int_config_only(void)
   MXC_GPIO_RegisterCallback(&pin, imuISR, NULL);
 
   // Latched DRDY => use LEVEL-HIGH (active-low? use MXC_GPIO_INT_LOW and set H_LACTIVE)
-  MXC_GPIO_IntConfig(&pin, MXC_GPIO_INT_HIGH);
+  MXC_GPIO_IntConfig(&pin, MXC_GPIO_INT_RISING);
   // DO NOT: MXC_GPIO_EnableInt(...) yet
   // DO NOT: NVIC_EnableIRQ(...) yet
 }
@@ -286,6 +308,45 @@ static void enable_imu_gpio_irq(void)
   MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
   NVIC_ClearPendingIRQ(MXC_GPIO_GET_IRQ(1));
   NVIC_EnableIRQ(MXC_GPIO_GET_IRQ(1));
+}
+
+static inline uint16_t imu_buffer_depth(void)
+{
+  if (imu_buf_head >= imu_buf_tail)
+    return imu_buf_head - imu_buf_tail;
+  return (IMU_BUF_SIZE - imu_buf_tail) + imu_buf_head;
+}
+
+static inline void imu_buffer_add(uint32_t t_ms, int16_t ax, int16_t ay, int16_t az)
+{
+  uint16_t next = (imu_buf_head + 1) % IMU_BUF_SIZE;
+  if (next == imu_buf_tail)
+  {
+    imu_buf_tail = (imu_buf_tail + 1) % IMU_BUF_SIZE; // overwrite oldest
+  }
+
+  imu_buf[imu_buf_head].t_ms = t_ms;
+  imu_buf[imu_buf_head].ax = ax;
+  imu_buf[imu_buf_head].ay = ay;
+  imu_buf[imu_buf_head].az = az;
+  imu_buf_head = next;
+}
+
+static inline bool imu_buffer_pop(imu_sample_t *out)
+{
+  if (imu_buf_head == imu_buf_tail)
+    return false;
+  *out = imu_buf[imu_buf_tail];
+  imu_buf_tail = (imu_buf_tail + 1) % IMU_BUF_SIZE;
+  return true;
+}
+void reset_imu_logging_state(void)
+{
+  imu_buf_head = 0;
+  imu_buf_tail = 0;
+  imu_drdy_count = 0;
+  imu_sample_total = 0;
+  imu_sample_index = 0;
 }
 void setAdvTxPower(void)
 {
@@ -332,14 +393,8 @@ void sensorISR(void *unused)
   MXC_GPIO_ClearFlags(MXC_GPIO0, MXC_GPIO_PIN_25); // Clear interrupt
 
   regRead(0x00);
-  // uint32_t t_start = MXC_TMR_GetCount(MXC_TMR1);
-  interrupt = 1; // Set interrupt flag to indicate that a sample was discarded
-
-  if (samples_discarded == 7)
-  {
-    sample_ready = 1;
-    samples_discarded = 0;
-  }
+  if (bioz_irq_count < UINT16_MAX)
+    bioz_irq_count++;
 }
 
 void setupMax30009Interrupt(void)
@@ -459,8 +514,8 @@ int main(void)
   MXC_Delay(MXC_DELAY_MSEC(20)); // <- give it time after reset
   i2c_write(CTRL3_C, 0x44);      // BDU=1, IF_INC=1
   i2c_write(CTRL2_G, 0x00);      // gyro off
-  i2c_write(CTRL1_XL, 0x20);     // accel 104Hz
-  i2c_write(DRDY_PULSE_CFG_G, 0x00);
+  i2c_write(CTRL1_XL, 0x40);     // accel 104Hz
+  i2c_write(DRDY_PULSE_CFG_G, 0x80); // pulsed DRDY
   i2c_write(INT1_CTRL, 0x01); // XL_DRDY -> INT1
 
   uint8_t st = 0;
@@ -514,8 +569,9 @@ int main(void)
     wsfOsDispatcher();
 
     /* ---------- BIOZ SERVICE ---------- */
-    if (interrupt)
+    while (bioz_irq_count)
     {
+      bioz_irq_count--;
       if (sample_ready)
       {
         sample_ready = 0;
@@ -528,60 +584,118 @@ int main(void)
         sample_index++;
         samples_discarded++;
         spiBurstnoPrint();
+        if (samples_discarded == 7)
+        {
+          sample_ready = 1;
+          samples_discarded = 0;
+        }
       }
-      interrupt = 0;
     }
     /* ---------- IMU SERVICE ---------- */
-    if (imu_drdy_flag && recordingIMU)
+    if (bioz_irq_count == 0)
     {
-      imu_drdy_flag = false;
-      uint8_t raw[6];
-      int rc = i2c_read(OUTX_L_XL, raw, 6);
+      uint16_t imu_to_service = imu_drdy_count;
+      if (imu_to_service > IMU_MAX_DRDY_PER_LOOP)
+        imu_to_service = IMU_MAX_DRDY_PER_LOOP;
+      while (imu_to_service--)
+      {
+        imu_drdy_count--;
+        if (!recordingIMU)
+        {
+          continue;
+        }
+      uint8_t raw_accel[6];
+      int rc = i2c_read(OUTX_L_XL, raw_accel, 6);
       if (rc != 0)
       {
         // printf("[I2C ERR] rc=%d\n", rc);
         imu_err_streak++;
         if (imu_err_streak >= 3)
-        {
-          // printf("Reinitializing I2C...\n");
-          MXC_I2C_Shutdown(I2C_MASTER);
-          MXC_I2C_Init(I2C_MASTER, 1, 0);
-          MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
-          imu_err_streak = 0;
-        }
+          {
+            // printf("Reinitializing I2C...\n");
+            MXC_I2C_Shutdown(I2C_MASTER);
+            MXC_I2C_Init(I2C_MASTER, 1, 0);
+            MXC_I2C_SetFrequency(I2C_MASTER, I2C_FREQ);
+            imu_err_streak = 0;
+          }
       }
       else
       {
         imu_err_streak = 0;
 
-        int16_t ax = (int16_t)((raw[1] << 8) | raw[0]);
-        int16_t ay = (int16_t)((raw[3] << 8) | raw[2]);
-        int16_t az = (int16_t)((raw[5] << 8) | raw[4]);
-        // printf("g: X=%.3f Y=%.3f Z=%.3f\n",
-        //        (double)ax*LSB_G, (double)ay*LSB_G, (double)az*LSB_G);
-        char log_entry[128];
-
-        // Format the log entry with timestamp, Q, I, and F_BIOZ
-        int log_len = snprintf(log_entry, sizeof(log_entry), "%.2f,%.2f,%.2f\n", (double)ax * LSB_G, (double)ay * LSB_G, (double)az * LSB_G);
-
-        datsSendData(AppConnIsOpen(), log_entry, log_len);
-        UINT written;
-        int err = 0;
-        if ((err = f_write(&imuFile, log_entry, log_len, &written)) != FR_OK || written != log_len)
-        {
-          printf("Write failed: %s\n", FF_ERRORS[err]);
-          return err;
-        }
+        int16_t ax = (int16_t)((raw_accel[1] << 8) | raw_accel[0]);
+        int16_t ay = (int16_t)((raw_accel[3] << 8) | raw_accel[2]);
+        int16_t az = (int16_t)((raw_accel[5] << 8) | raw_accel[4]);
+        uint32_t t_ms = (imu_sample_index * 1000) / IMU_ODR_HZ;
+        imu_sample_index++;
+        imu_buffer_add(t_ms, ax, ay, az);
       }
-
-      /* Ensure DRDY line cleared before re-enabling */
-      while (MXC_GPIO_InGet(IMU_INT_PORT, IMU_INT_MASK))
-        ;
-      MXC_GPIO_ClearFlags(IMU_INT_PORT, IMU_INT_MASK);
-      MXC_GPIO_EnableInt(IMU_INT_PORT, IMU_INT_MASK);
+    }
     }
 
-    // wsfOsDispatcher();
+    /* Flush IMU buffer in batches to keep ISR light */
+    if (recordingIMU && bioz_irq_count == 0)
+    {
+      uint16_t pending = imu_buffer_depth();
+      if (pending)
+      {
+        uint16_t to_flush = pending > IMU_FLUSH_BATCH ? IMU_FLUSH_BATCH : pending;
+        char log_chunk[256];
+        uint16_t chunk_len = 0;
+
+        while (to_flush--)
+        {
+          imu_sample_t s;
+          if (!imu_buffer_pop(&s))
+            break;
+
+          imu_sample_total++;
+
+          // Format accel-only line
+          char line_ble[64];
+          int line_ble_len = snprintf(line_ble, sizeof(line_ble),
+                                      "%lu,%.2f,%.2f,%.2f\n",
+                                      (unsigned long)s.t_ms,
+                                      (double)s.ax * LSB_G, (double)s.ay * LSB_G, (double)s.az * LSB_G);
+          if (line_ble_len <= 0 || line_ble_len >= (int)sizeof(line_ble))
+          {
+            continue;
+          }
+
+          if (chunk_len + line_ble_len >= sizeof(log_chunk))
+          {
+            UINT written;
+            int err = f_write(&imuFile, log_chunk, chunk_len, &written);
+            if (err != FR_OK || written != chunk_len)
+            {
+              printf("Write failed: %s\n", FF_ERRORS[err]);
+              return err;
+            }
+            chunk_len = 0;
+          }
+          // BLE decimation
+          if ((IMU_BLE_DECIM <= 1) || ((imu_sample_total % IMU_BLE_DECIM) == 0))
+          {
+            datsSendData(AppConnIsOpen(), line_ble, line_ble_len);
+          }
+
+          // Log accel-only to SD
+          memcpy(log_chunk + chunk_len, line_ble, line_ble_len);
+          chunk_len += line_ble_len;
+        }
+
+        if (chunk_len)
+        {
+          UINT written;
+          int err = 0;
+          if ((err = f_write(&imuFile, log_chunk, chunk_len, &written)) != FR_OK || written != chunk_len)
+          {
+            printf("Write failed: %s\n", FF_ERRORS[err]);
+            return err;
+          }
+        }
+      }
+    }
 
     if (!WsfOsActive())
     {

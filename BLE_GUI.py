@@ -28,10 +28,13 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.pending_data = {f: [] for f in self.freqs}
         self.accel_time = []
         self.accel_data = {"x": [], "y": [], "z": []}
+        self.velocity_data = {"x": [], "y": [], "z": []}
         self.pending_accel = []
         self.accel_index = 0
         self.log_file = None
         self.recording = False
+        self.bioz_coeff = 1.0
+        self.combined_span_ms = 10000  # fallback span for combined plot
 
         layout = QtWidgets.QVBoxLayout(self)
 
@@ -70,6 +73,15 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.tabs = QtWidgets.QTabWidget()
         self.graphs, self.curves, self.scatters = [], [], []
         self.accel_graphs, self.accel_curves, self.accel_scatters = [], [], []
+        self.combined_plot = None
+        self.combined_curves = {}
+        self.combined_scatters = {}
+        self.combined_imu_plot = None
+        self.combined_imu_curves = {}
+        self.combined_imu_scatters = {}
+        self.combined_vel_plot = None
+        self.combined_vel_curves = {}
+        self.combined_vel_scatters = {}
         colors = ['y', 'g', 'c', 'r']
         for idx, freq in enumerate(self.freqs):
             tab = QtWidgets.QWidget()
@@ -101,6 +113,47 @@ class BLEBioZPlotter(QtWidgets.QWidget):
             self.curves.append(c)
             self.scatters.append(s)
         self.tabs.addTab(accel_tab, "Accelerometer")
+
+        # Combined BioZ view (both freqs, Q/I on one plot)
+        combined_tab = QtWidgets.QWidget()
+        combined_layout = QtWidgets.QVBoxLayout(combined_tab)
+        self.combined_plot = pg.PlotWidget(title="BioZ Q/I - Dual Frequency")
+        self.combined_plot.addLegend()
+
+        combined_colors = {
+            (self.freqs[0], "Q"): ('#3498db', QtCore.Qt.SolidLine),
+            (self.freqs[0], "I"): ('#e67e22', QtCore.Qt.SolidLine),
+            (self.freqs[1], "Q"): ('#2ecc71', QtCore.Qt.DashLine),
+            (self.freqs[1], "I"): ('#c0392b', QtCore.Qt.DashLine),
+        }
+        for (freq, comp), (color, style) in combined_colors.items():
+            pen = pg.mkPen(color=color, width=2, style=style)
+            curve = self.combined_plot.plot(pen=pen, name=f"{comp} @ {freq} Hz")
+            self.combined_curves[(freq, comp)] = curve
+            scatter = pg.ScatterPlotItem(brush=color, size=5, pen=pg.mkPen(color=color))
+            self.combined_plot.addItem(scatter)
+            self.combined_scatters[(freq, comp)] = scatter
+
+        combined_layout.addWidget(self.combined_plot, 3)
+
+        # Combined IMU view (all axes together)
+        self.combined_imu_plot = pg.PlotWidget(title="IMU Accel (All Axes)")
+        self.combined_imu_plot.addLegend()
+        imu_colors = {
+            "x": '#e67e22',
+            "y": '#2980b9',
+            "z": '#2ecc71',
+        }
+        for axis, color in imu_colors.items():
+            pen = pg.mkPen(color=color, width=2)
+            curve = self.combined_imu_plot.plot(pen=pen, name=f"Accel {axis.upper()}")
+            self.combined_imu_curves[axis] = curve
+            scatter = pg.ScatterPlotItem(brush=color, size=5, pen=pg.mkPen(color=color))
+            self.combined_imu_plot.addItem(scatter)
+            self.combined_imu_scatters[axis] = scatter
+        combined_layout.addWidget(self.combined_imu_plot, 1)
+
+        self.tabs.addTab(combined_tab, "Combined BioZ")
         layout.addWidget(self.tabs)
 
         self.scan_button.clicked.connect(self.scan_devices)
@@ -133,6 +186,14 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.accel_index = 0
         for c in self.curves: c.setData([], [])
         for s in self.scatters: s.setData([], [])
+        for curve in self.combined_curves.values():
+            curve.setData([], [])
+        for scatter in self.combined_scatters.values():
+            scatter.setData([], [])
+        for curve in self.combined_imu_curves.values():
+            curve.setData([], [])
+        for scatter in self.combined_imu_scatters.values():
+            scatter.setData([], [])
 
     @asyncSlot()
     async def scan_devices(self):
@@ -221,6 +282,10 @@ class BLEBioZPlotter(QtWidgets.QWidget):
             self.log_file = None
 
     def update_plots(self):
+        combined_has_data = False
+        first_points = []
+        last_points = []
+
         for freq in self.freqs:
             idx = self.freqs.index(freq)
             updates = self.pending_data[freq]
@@ -247,13 +312,36 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 self.graphs[idx * 2].setXRange(xmin, xmax, padding=0.01)
                 self.graphs[idx * 2 + 1].setXRange(xmin, xmax, padding=0.01)
 
+            # Combined plot updates
+            if self.x_data[freq]:
+                combined_has_data = True
+                x_first = self.x_data[freq][0]
+                x_last = self.x_data[freq][-1]
+                first_points.append(x_first)
+                last_points.append(x_last)
+                self.combined_curves[(freq, "Q")].setData(self.x_data[freq], self.q_data[freq])
+                self.combined_curves[(freq, "I")].setData(self.x_data[freq], self.i_data[freq])
+                self.combined_scatters[(freq, "Q")].setData(self.x_data[freq], self.q_data[freq])
+                self.combined_scatters[(freq, "I")].setData(self.x_data[freq], self.i_data[freq])
+
         if self.pending_accel:
-            for ax, ay, az in self.pending_accel:
-                self.accel_time.append(self.accel_index)
-                self.accel_index += 1
-                self.accel_data["x"].append(ax)
-                self.accel_data["y"].append(ay)
-                self.accel_data["z"].append(az)
+            for entry in self.pending_accel:
+                if len(entry) == 4:
+                    t_ms, ax, ay, az = entry
+                    last_t = self.accel_time[-1] if self.accel_time else None
+                    if last_t is not None and t_ms <= last_t:
+                        continue  # drop out-of-order or duplicate timestamps
+                    self.accel_time.append(t_ms)
+                    self.accel_data["x"].append(ax)
+                    self.accel_data["y"].append(ay)
+                    self.accel_data["z"].append(az)
+                else:
+                    ax, ay, az = entry
+                    self.accel_time.append(self.accel_index)
+                    self.accel_index += 1
+                    self.accel_data["x"].append(ax)
+                    self.accel_data["y"].append(ay)
+                    self.accel_data["z"].append(az)
             self.pending_accel = []
 
             if len(self.accel_time) > self.window_size:
@@ -264,12 +352,25 @@ class BLEBioZPlotter(QtWidgets.QWidget):
             for idx, axis in enumerate(["x", "y", "z"]):
                 self.accel_curves[idx].setData(self.accel_time, self.accel_data[axis])
                 self.accel_scatters[idx].setData(self.accel_time, self.accel_data[axis])
+                # Combined IMU plot
+                self.combined_imu_curves[axis].setData(self.accel_time, self.accel_data[axis])
+                self.combined_imu_scatters[axis].setData(self.accel_time, self.accel_data[axis])
 
             if len(self.accel_time) >= 10:
                 xmin = self.accel_time[0]
                 xmax = self.accel_time[-1]
                 for g in self.accel_graphs:
                     g.setXRange(xmin, xmax, padding=0.01)
+                self.combined_imu_plot.setXRange(xmin, xmax, padding=0.01)
+
+        if combined_has_data and first_points and last_points:
+            # Use overlap of timelines to avoid bouncing as window slides
+            x_min = max(first_points)
+            x_max = min(last_points)
+            if x_max <= x_min:
+                x_max = max(last_points)
+                x_min = x_max - self.combined_span_ms
+            self.combined_plot.setXRange(x_min, x_max, padding=0.01)
 
     async def debug_start_wrapper(self):
         print("[DEBUG] Calling send_start() coroutine")
@@ -286,6 +387,14 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         try:
             line = data.decode("utf-8").strip()
 
+            if line.startswith("bioz_coeff:"):
+                try:
+                    self.bioz_coeff = float(line.split(":", 1)[1])
+                    print(f"[BIOZ] Coefficient set to {self.bioz_coeff}")
+                except ValueError:
+                    pass
+                return
+
             if line == "startPhys":
                 print("[BUTTON] Physical Start Triggered")
                 asyncio.create_task(self.debug_start_wrapper())
@@ -297,9 +406,31 @@ class BLEBioZPlotter(QtWidgets.QWidget):
 
 
 
-            # handle data in the format: timestamp,q,i,freq
+            # handle data in the format: timestamp,q,i,freq (BioZ) OR t_ms,ax,ay,az (IMU)
             parts = line.split(",")
-            if len(parts) == 3:
+            if len(parts) == 4:
+                cleaned = [p.strip().replace("(", "").replace(")", "") for p in parts]
+                try:
+                    vals = [float(p) for p in cleaned]
+                except ValueError:
+                    return
+
+                # Decide if this is BioZ or IMU by checking if last field matches known freqs
+                freq_candidate = int(round(vals[3]))
+                if freq_candidate in self.freqs:
+                    timestamp, q, i, freq = vals
+                    phase = math.atan2(q, i) * 180.0 / math.pi
+                    self.pending_data[freq_candidate].append((timestamp, q, i, phase))
+                    if self.log_file:
+                        self.log_file.write(f"{timestamp},{q},{i},{freq_candidate},{phase:.2f}\n")
+                    return
+                else:
+                    # Treat as accel with timestamp
+                    t_ms, ax, ay, az = vals
+                    self.pending_accel.append((t_ms, ax, ay, az))
+                    return
+
+            elif len(parts) == 3:
                 try:
                     cleaned = [p.strip().replace("(", "").replace(")", "") for p in parts]
                     vals = [float(p) for p in cleaned]
@@ -308,17 +439,6 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                     pass  # Not accel data, fall through
                 else:
                     return
-
-            if len(parts) != 4:
-                return
-            timestamp, q, i, freq = map(float, parts)
-            freq = int(round(freq))
-            if freq not in self.freqs:
-                return
-            phase = math.atan2(q, i) * 180.0 / math.pi
-            self.pending_data[freq].append((timestamp, q, i, phase))
-            if self.log_file:
-                self.log_file.write(f"{timestamp},{q},{i},{freq},{phase:.2f}\n")
 
         except Exception as e:
             print("[Notify Error]", e)

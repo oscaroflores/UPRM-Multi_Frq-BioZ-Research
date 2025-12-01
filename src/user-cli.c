@@ -24,6 +24,9 @@
 
 #include "sdhc.h"
 #include "user-cli.h"
+#include "bioZ.h"
+#include "dats_api.h"
+#include "app_api.h"
 #include <stdlib.h>
 #import "time.h"
 #import "rtc.h"
@@ -46,6 +49,8 @@ const command_t user_commands[] = {
 };
 extern FIL imuFile;
 extern int sample_index; // Declare sample_index as extern to access it in other files
+extern dmConnId_t AppConnIsOpen(void);
+extern void reset_imu_logging_state(void);
 const unsigned int num_user_commands =
     sizeof(user_commands) / sizeof(command_t);
 volatile bool recordingIMU = false;
@@ -234,21 +239,30 @@ int handle_start(int argc, char *argv[])
   if ((err = createNextBiozLogFile()) != FR_OK)
     return err;
 
-if ((err = openLogFile()) != FR_OK)
+  if ((err = openLogFile()) != FR_OK)
     return err;
 
-if ((err = createNextIMULogFile()) != FR_OK)
+  if ((err = createNextIMULogFile()) != FR_OK)
     return err;
 
-// OR use openIMULogFile() directly if it doesn't auto-create:
-if ((err = openIMULogFile(imu_log_file)) != FR_OK)
+  // OR use openIMULogFile() directly if it doesn't auto-create:
+  if ((err = openIMULogFile(imu_log_file)) != FR_OK)
     return err;
 
+  double ohm_coeff = getBiozOhmCoeff();
+  setBiozOhmCoeff(ohm_coeff);
+  if (ohm_coeff > 0.0)
+  {
+    char coef_msg[64];
+    int len = snprintf(coef_msg, sizeof(coef_msg), "bioz_coeff:%f\n", ohm_coeff);
+    datsSendData(AppConnIsOpen(), coef_msg, len);
+  }
 
+  reset_imu_logging_state();
 
-    changeReg(0x20, 0x7, 2, 3);
-    // recording = true;
-    recordingIMU = true;
+  changeReg(0x20, 0x7, 2, 3);
+  // recording = true;
+  recordingIMU = true;
 
     return E_NO_ERROR;
 }

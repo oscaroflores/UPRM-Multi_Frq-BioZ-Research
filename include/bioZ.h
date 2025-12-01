@@ -14,3 +14,6 @@ uint32_t getRefClkHz();
 int getKDiv();
 int getDACOSR();
 double getBiozFreq();
+double getBiozOhmCoeff(void);
+void setBiozOhmCoeff(double c);
+double getBiozOhmCoeffCached(void);

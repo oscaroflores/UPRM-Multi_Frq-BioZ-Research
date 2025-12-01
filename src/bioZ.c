@@ -33,6 +33,7 @@ extern int count;
 extern int errCnt;
 
 // Globals
+static double bioz_ohm_coeff = 1.0;
 uint32_t sample_interval_us = 0; // make accessible from main if needed
 uint32_t sample_index = 0;       // Declare as global variable
 double sr_bioz;
@@ -401,6 +402,34 @@ double convertCountsToOhms(double count)
   return (count * V_REF) / (ADC_FS * gain * TWO_OVER_PI * i_mag);
 }
 
+double getBiozOhmCoeff(void)
+{
+  const double V_REF = 1.0;
+  const double TWO_OVER_PI = 2.0 / M_PI;
+  const double ADC_FS = pow(2, 19);
+
+  double gain = getBiozGain();
+  double i_mag = getBiozCurrent_uA() / 1e6;
+  if (gain <= 0 || i_mag <= 0)
+  {
+    return 0.0;
+  }
+  return V_REF / (ADC_FS * gain * TWO_OVER_PI * i_mag);
+}
+
+void setBiozOhmCoeff(double c)
+{
+  if (c > 0.0)
+  {
+    bioz_ohm_coeff = c;
+  }
+}
+
+double getBiozOhmCoeffCached(void)
+{
+  return bioz_ohm_coeff;
+}
+
 /**
  * @brief Calculate BioZ impedance from FIFO data.
  *
@@ -508,12 +537,15 @@ int calcBioZ(uint8_t buf[], bool freqLogged)
   // --- Timestamp using sample index and sr_bioz ---
   uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
   sample_index++;
+  double coeff = getBiozOhmCoeffCached();
+  double I_ohm = I * coeff;
+  double Q_ohm = Q * coeff;
 
   // Convert to Ohms
   // double I_ohm = convertCountsToOhms(I);
   // double Q_ohm = convertCountsToOhms(Q);
   // // freq calc
-  // double F_BIOZ = getBiozFreq();
+  double F_BIOZ = getBiozFreq();
   // debug calcs
 
   // double phase_rad = atan2(Q_ohm, I_ohm);
@@ -546,7 +578,7 @@ int calcBioZ(uint8_t buf[], bool freqLogged)
   char log_entry[128];
 
   // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q, I, freqLogged ? 131328.0 : 4104.0);
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
 
   // Send log entry via BLE
   datsSendData(AppConnIsOpen(), log_entry, log_len);
