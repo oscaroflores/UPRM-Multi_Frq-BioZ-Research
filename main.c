@@ -564,7 +564,7 @@ int main(void)
   while (1)
   {
     WsfTimerSleepUpdate();
-    // uint32_t start = MXC_TMR_GetCount(MXC_TMR1);
+    uint32_t start = MXC_TMR_GetCount(MXC_TMR1);
 
     wsfOsDispatcher();
 
@@ -578,6 +578,8 @@ int main(void)
         spiBurst(current_freq);
         current_freq = !current_freq;
         setFreq(current_freq);
+        uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+            printf("BioZ: %d\n", end-start);
       }
       else
       {
@@ -629,8 +631,11 @@ int main(void)
         uint32_t t_ms = (imu_sample_index * 1000) / IMU_ODR_HZ;
         imu_sample_index++;
         imu_buffer_add(t_ms, ax, ay, az);
+        uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+            printf("IMU: %d\n", end-start);
       }
     }
+    
     }
 
     /* Flush IMU buffer in batches to keep ISR light */
@@ -677,13 +682,15 @@ int main(void)
           if ((IMU_BLE_DECIM <= 1) || ((imu_sample_total % IMU_BLE_DECIM) == 0))
           {
             datsSendData(AppConnIsOpen(), line_ble, line_ble_len);
+            // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+            // printf("BLE: %d\n", end-start);
           }
 
           // Log accel-only to SD
           memcpy(log_chunk + chunk_len, line_ble, line_ble_len);
           chunk_len += line_ble_len;
         }
-
+        // uint32_t start2 = MXC_TMR_GetCount(MXC_TMR1);
         if (chunk_len)
         {
           UINT written;
@@ -694,6 +701,8 @@ int main(void)
             return err;
           }
         }
+        // uint32_t end = MXC_TMR_GetCount(MXC_TMR1);
+        //     printf("SD Card: %d\n", end-start);
       }
     }
 

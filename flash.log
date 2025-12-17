@@ -1,3 +1,4 @@
+Warn : could not read product string for device 0x04f2:0xb7fe: Invalid parameter
 Info : CMSIS-DAP: SWD supported
 Info : CMSIS-DAP: FW Version = 1.0
 Info : CMSIS-DAP: Interface Initialised (SWD)
@@ -17,8 +18,8 @@ Warn : Prefer GDB command "target extended-remote :pipe" instead of "target remo
 Warn : No RTOS could be auto-detected!
 [max32xxx.cpu] halted due to debug-request, current mode: Thread 
 xPSR: 0x01000000 pc: 0x000001b4 msp: 0x2000c000
-Warn : keep_alive() was not invoked in the 1000 ms timelimit. GDB alive packet not sent! (1750 ms). Workaround: increase "set remotetimeout" in GDB
-Info : Padding image section 0 at 0x1004fc84 with 12 bytes
+Warn : keep_alive() was not invoked in the 1000 ms timelimit. GDB alive packet not sent! (1782 ms). Workaround: increase "set remotetimeout" in GDB
+Info : Padding image section 0 at 0x1004fd5c with 4 bytes
 [max32xxx.cpu] halted due to debug-request, current mode: Thread 
 xPSR: 0x01000000 pc: 0x000001b4 msp: 0x2000c000
 Info : dropped 'gdb' connection
