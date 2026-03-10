@@ -34,6 +34,7 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         self.log_file = None
         self.recording = False
         self.bioz_coeff = 1.0
+        self.rx_buffer = ""
         self.combined_span_ms = 10000  # fallback span for combined plot
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -383,65 +384,85 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         print("[DEBUG] send_stop() finished")
 
     def handle_notification(self, _, data):
-        # Handle physical button presses
         try:
-            line = data.decode("utf-8").strip()
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            return
 
-            if line.startswith("bioz_coeff:"):
-                try:
-                    self.bioz_coeff = float(line.split(":", 1)[1])
-                    print(f"[BIOZ] Coefficient set to {self.bioz_coeff}")
-                except ValueError:
-                    pass
+        self.rx_buffer += text
+        lines = self.rx_buffer.splitlines()
+        if self.rx_buffer.endswith(("\n", "\r")):
+            self.rx_buffer = ""
+        else:
+            self.rx_buffer = lines[-1] if lines else ""
+            lines = lines[:-1]
+
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+            try:
+                self._process_message(line)
+            except Exception as e:
+                print("[Notify Error]", e)
+
+    def _map_frequency(self, value):
+        if not self.freqs:
+            return None
+        target = float(value)
+        freq = min(self.freqs, key=lambda f: abs(f - target))
+        if abs(freq - target) < 5000:
+            return freq
+        return None
+
+    def _process_message(self, line):
+        if line.startswith("bioz_coeff:"):
+            try:
+                self.bioz_coeff = float(line.split(":", 1)[1])
+                print(f"[BIOZ] Coefficient set to {self.bioz_coeff}")
+            except ValueError:
+                pass
+            return
+
+        if line == "startPhys":
+            print("[BUTTON] Physical Start Triggered")
+            asyncio.create_task(self.debug_start_wrapper())
+            return
+        if line == "stopPhys":
+            print("[BUTTON] Physical Stop Triggered")
+            asyncio.create_task(self.debug_stop_wrapper())
+            return
+
+        parts = line.split(",")
+        if len(parts) == 4:
+            cleaned = [p.strip().replace("(", "").replace(")", "") for p in parts]
+            try:
+                vals = [float(p) for p in cleaned]
+            except ValueError:
                 return
 
-            if line == "startPhys":
-                print("[BUTTON] Physical Start Triggered")
-                asyncio.create_task(self.debug_start_wrapper())
-                return
-            elif line == "stopPhys":
-                print("[BUTTON] Physical Stop Triggered")
-                asyncio.create_task(self.debug_stop_wrapper())
-                return
+            freq_candidate = self._map_frequency(vals[3])
+            if freq_candidate is not None:
+                timestamp, q, i, _ = vals
+                phase = math.atan2(q, i) * 180.0 / math.pi
+                self.pending_data[freq_candidate].append((timestamp, q, i, phase))
+                if self.log_file:
+                    self.log_file.write(
+                        f"{timestamp},{q},{i},{freq_candidate},{phase:.2f}\n"
+                    )
+            else:
+                t_ms, ax, ay, az = vals
+                self.pending_accel.append((t_ms, ax, ay, az))
+            return
 
-
-
-            # handle data in the format: timestamp,q,i,freq (BioZ) OR t_ms,ax,ay,az (IMU)
-            parts = line.split(",")
-            if len(parts) == 4:
+        if len(parts) == 3:
+            try:
                 cleaned = [p.strip().replace("(", "").replace(")", "") for p in parts]
-                try:
-                    vals = [float(p) for p in cleaned]
-                except ValueError:
-                    return
-
-                # Decide if this is BioZ or IMU by checking if last field matches known freqs
-                freq_candidate = int(round(vals[3]))
-                if freq_candidate in self.freqs:
-                    timestamp, q, i, freq = vals
-                    phase = math.atan2(q, i) * 180.0 / math.pi
-                    self.pending_data[freq_candidate].append((timestamp, q, i, phase))
-                    if self.log_file:
-                        self.log_file.write(f"{timestamp},{q},{i},{freq_candidate},{phase:.2f}\n")
-                    return
-                else:
-                    # Treat as accel with timestamp
-                    t_ms, ax, ay, az = vals
-                    self.pending_accel.append((t_ms, ax, ay, az))
-                    return
-
-            elif len(parts) == 3:
-                try:
-                    cleaned = [p.strip().replace("(", "").replace(")", "") for p in parts]
-                    vals = [float(p) for p in cleaned]
-                    self.pending_accel.append(tuple(vals))
-                except ValueError:
-                    pass  # Not accel data, fall through
-                else:
-                    return
-
-        except Exception as e:
-            print("[Notify Error]", e)
+                vals = [float(p) for p in cleaned]
+            except ValueError:
+                return
+            self.pending_accel.append(tuple(vals))
+            return
 
 
 if __name__ == "__main__":
