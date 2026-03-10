@@ -70,6 +70,13 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         slider_layout.addWidget(self.window_slider)
         layout.addLayout(slider_layout)
 
+        # Live log viewer.
+        self.log_view = QtWidgets.QPlainTextEdit()
+        self.log_view.setReadOnly(True)
+        self.log_view.setMaximumBlockCount(500)
+        self.log_view.setPlaceholderText("Incoming BLE data will appear here...")
+        layout.addWidget(self.log_view)
+
         # Graphs
         self.tabs = QtWidgets.QTabWidget()
         self.graphs, self.curves, self.scatters = [], [], []
@@ -416,6 +423,8 @@ class BLEBioZPlotter(QtWidgets.QWidget):
         return None
 
     def _process_message(self, line):
+        self._append_log_line(line)
+
         if line.startswith("bioz_coeff:"):
             try:
                 self.bioz_coeff = float(line.split(":", 1)[1])
@@ -463,6 +472,14 @@ class BLEBioZPlotter(QtWidgets.QWidget):
                 return
             self.pending_accel.append(tuple(vals))
             return
+
+    def _append_log_line(self, line):
+        QtCore.QMetaObject.invokeMethod(
+            self.log_view,
+            "appendPlainText",
+            QtCore.Qt.QueuedConnection,
+            QtCore.Q_ARG(str, line),
+        )
 
 
 if __name__ == "__main__":
