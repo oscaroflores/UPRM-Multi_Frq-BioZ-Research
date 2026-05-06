@@ -55,6 +55,7 @@
 #include "tmr.h"
 #include "svc_sds.h"
 #include "user-cli.h"
+#include "sdhc.h"
 /**************************************************************************************************
   Macros
 **************************************************************************************************/
@@ -80,6 +81,8 @@
 #define BTN_2_TMR MXC_TMR3
 #define MXC_BASE_WUT0 ((uint32_t)0x40006400UL)
 #define MXC_WUT0 ((mxc_wut_regs_t *)MXC_BASE_WUT0)
+#define DATS_CONN_INTERVAL_15_MS 12U
+#define DATS_CONN_INTERVAL_30_MS 24U
 /*! Enumeration of client characteristic configuration descriptors */
 enum
 {
@@ -177,14 +180,14 @@ static const smpCfg_t datsSmpCfg = {
 
 /*! configurable parameters for connection parameter update */
 static const appUpdateCfg_t datsUpdateCfg = {
-    0,
+    500,
     /*! ^ Connection idle period in ms before attempting
     connection parameter update. set to zero to disable */
-    (15 * 8 / 1.25),  /*! Minimum connection interval in 1.25ms units */
-    (15 * 12 / 1.25), /*! Maximum connection interval in 1.25ms units */
-    0,                /*! Connection latency */
-    600,              /*! Supervision timeout in 10ms units */
-    5                 /*! Number of update attempts before giving up */
+    DATS_CONN_INTERVAL_15_MS, /*! Minimum connection interval in 1.25ms units */
+    DATS_CONN_INTERVAL_30_MS, /*! Maximum connection interval in 1.25ms units */
+    0,                       /*! Connection latency */
+    600,                     /*! Supervision timeout in 10ms units */
+    5                        /*! Number of update attempts before giving up */
 };
 
 /*! ATT configurable parameters (increase MTU) */
@@ -285,7 +288,7 @@ void datsSendData(dmConnId_t connId, const char *log_entry, uint16_t log_len)
     if (AttsCccEnabled(connId, DATS_WP_DAT_CCC_IDX))
     {
         /* send notification */
-        AttsHandleValueNtf(connId, WP_DAT_HDL, log_len, (const uint8_t *)log_entry);
+        AttsHandleValueNtf(connId, WP_DAT_HDL, log_len, (uint8_t *)log_entry);
     }
 }
 
@@ -456,6 +459,7 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
 
         if (strcmp(msg, "start") == 0 || strcmp(msg, "start\r\n") == 0)
         {
+            biozLogTransferCancel();
             // Default start
             char *argv[1] = {"start"};
             int err = handle_start(1, argv);
@@ -466,6 +470,7 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
         }
         else if (strncmp(msg, "start@", 6) == 0)
         {
+            biozLogTransferCancel();
             // BLE-safe compact format: start@YYMMDD@HHMMSS
             char *token1 = strtok(msg, "@");  // "start"
             char *token2 = strtok(NULL, "@"); // date
@@ -511,6 +516,23 @@ uint8_t datsWpWriteCback(dmConnId_t connId, uint16_t handle, uint8_t operation, 
                 printf("Stop command executed successfully.\n");
             else
                 printf("Stop failed: %d\n", err);
+        }
+        else if (strcmp(msg, "logs:list") == 0)
+        {
+            (void)biozLogsSendList((uint8_t)connId);
+        }
+        else if (strncmp(msg, "logs:get:", 9) == 0)
+        {
+            (void)biozLogTransferStart((uint8_t)connId, &msg[9]);
+        }
+        else if (strncmp(msg, "logs:ack:", 9) == 0)
+        {
+            biozLogTransferAck((uint8_t)connId, (uint16_t)strtoul(&msg[9], NULL, 10));
+        }
+        else if (strcmp(msg, "logs:cancel") == 0)
+        {
+            biozLogTransferCancel();
+            datsSendData(connId, "logs:cancelled", sizeof("logs:cancelled") - 1);
         }
 
         // datsSendData(connId); // Optional echo
@@ -737,6 +759,10 @@ static void datsProcMsg(dmEvt_t *pMsg)
 
     case DM_CONN_OPEN_IND:
         uiEvent = APP_UI_CONN_OPEN;
+#if (BT_VER > 8)
+        DmSetPhy((dmConnId_t)pMsg->hdr.param, HCI_ALL_PHY_ALL_PREFERENCES,
+                 HCI_PHY_LE_2M_BIT, HCI_PHY_LE_2M_BIT, HCI_PHY_OPTIONS_NONE);
+#endif /* BT_VER */
         if (datsSecCfg.initiateSec)
         {
             AppSlaveSecurityReq((dmConnId_t)pMsg->hdr.param);

@@ -32,6 +32,21 @@ extern uint8_t IMag;
 extern int count;
 extern int errCnt;
 
+#define BIOZ_PACKET_MAGIC 0x5A42U
+#define BIOZ_PACKET_VERSION 1U
+#define BIOZ_PACKET_TYPE_SAMPLE 1U
+
+typedef struct __attribute__((packed))
+{
+  uint16_t magic;
+  uint8_t version;
+  uint8_t type;
+  uint32_t timestamp_ms;
+  float q_ohm;
+  float i_ohm;
+  float freq_hz;
+} bioz_sample_packet_t;
+
 // Globals
 uint32_t sample_interval_us = 0; // make accessible from main if needed
 uint32_t sample_index = 0;       // Declare as global variable
@@ -542,24 +557,22 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   // printf("%d\n", regRead(0x0A) & 0x80);
   // printf("phase: %f\n", phase_deg);
 
-  // SD card upload
-  char log_entry[128];
+  bioz_sample_packet_t packet = {
+      .magic = BIOZ_PACKET_MAGIC,
+      .version = BIOZ_PACKET_VERSION,
+      .type = BIOZ_PACKET_TYPE_SAMPLE,
+      .timestamp_ms = timestamp,
+      .q_ohm = (float)Q_ohm,
+      .i_ohm = (float)I_ohm,
+      .freq_hz = (float)F_BIOZ,
+  };
 
-  // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
-
-  // Send log entry via BLE
-  datsSendData(AppConnIsOpen(), log_entry, log_len);
-
-  if (log_len < 0 || log_len >= sizeof(log_entry))
-  {
-    printf("Error formatting log entry.\n");
-    return -1;
-  }
+  // Send binary sample packet via BLE.
+  datsSendData(AppConnIsOpen(), (const char *)&packet, sizeof(packet));
 
   // Write to SD card
   UINT written;
-  if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK || written != log_len)
+  if ((err = f_write(&file, &packet, sizeof(packet), &written)) != FR_OK || written != sizeof(packet))
   {
     printf("Write failed: %s\n", FF_ERRORS[err]);
     return err;

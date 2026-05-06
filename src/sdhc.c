@@ -20,8 +20,19 @@
  ******************************************************************************/
 
 #include "sdhc.h"
+#include "att_api.h"
+#include "dats_api.h"
 #include "rtc.h"
 #include "time.h"
+#include <stdbool.h>
+
+#define BIOZ_LOG_TRANSFER_MAGIC 0x4C47U
+#define BIOZ_LOG_TRANSFER_VERSION 1U
+#define BIOZ_LOG_TRANSFER_CHUNK 220U
+#define BIOZ_LOG_TRANSFER_WINDOW 4U
+#define BIOZ_LOG_TRANSFER_HEADER_LEN 8U
+#define BIOZ_LOG_ATT_NOTIFY_OVERHEAD 3U
+
 /***** Globals *****/
 FATFS *fs; // FFat Filesystem Object
 FATFS fs_obj;
@@ -41,8 +52,118 @@ TCHAR message[MAXLEN], directory[MAXLEN], cwd[MAXLEN], filename[MAXLEN], volume_
 mxc_gpio_cfg_t SDPowerEnablePin = {MXC_GPIO1, MXC_GPIO_PIN_12, MXC_GPIO_FUNC_OUT,
                                    MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO};
 char new_log_file[64];
+static bool bioz_log_file_open = false;
+static FIL bioz_log_read_file;
+static bool bioz_log_transfer_active = false;
+static bool bioz_log_transfer_read_open = false;
+static bool bioz_log_transfer_read_done = false;
+static uint8_t bioz_log_transfer_conn_id = 0;
+static uint16_t bioz_log_transfer_seq = 0;
+static uint16_t bioz_log_transfer_in_flight = 0;
+static uint32_t bioz_log_transfer_sent = 0;
+static uint32_t bioz_log_transfer_size = 0;
+static char bioz_log_transfer_name[64];
+
+typedef struct __attribute__((packed))
+{
+    uint16_t magic;
+    uint8_t version;
+    uint8_t type;
+    uint16_t seq;
+    uint16_t len;
+    uint8_t data[BIOZ_LOG_TRANSFER_CHUNK];
+} bioz_log_transfer_packet_t;
 
 // /***** FUNCTIONS *****/
+
+static void biozLogSendText(uint8_t connId, const char *text)
+{
+    if (text != NULL)
+    {
+        datsSendData((dmConnId_t)connId, text, (uint16_t)strlen(text));
+    }
+}
+
+static uint16_t biozLogTransferPayloadLen(uint8_t connId)
+{
+    uint16_t mtu = AttGetMtu((dmConnId_t)connId);
+    uint16_t notify_payload;
+
+    if (mtu <= BIOZ_LOG_ATT_NOTIFY_OVERHEAD)
+    {
+        notify_payload = 20U;
+    }
+    else
+    {
+        notify_payload = (uint16_t)(mtu - BIOZ_LOG_ATT_NOTIFY_OVERHEAD);
+    }
+
+    if (notify_payload <= BIOZ_LOG_TRANSFER_HEADER_LEN)
+    {
+        return 0U;
+    }
+
+    notify_payload = (uint16_t)(notify_payload - BIOZ_LOG_TRANSFER_HEADER_LEN);
+    if (notify_payload > BIOZ_LOG_TRANSFER_CHUNK)
+    {
+        notify_payload = BIOZ_LOG_TRANSFER_CHUNK;
+    }
+
+    return notify_payload;
+}
+
+static void biozLogTransferFinish(void)
+{
+    char line[128];
+
+    bioz_log_transfer_active = false;
+    bioz_log_transfer_read_done = false;
+    bioz_log_transfer_in_flight = 0;
+    snprintf(line, sizeof(line), "logs:read_end:%s:%lu",
+             bioz_log_transfer_name, (unsigned long)bioz_log_transfer_sent);
+    biozLogSendText(bioz_log_transfer_conn_id, line);
+}
+
+static bool biozLogNameIsValid(const char *name)
+{
+    size_t len;
+
+    if (name == NULL)
+    {
+        return false;
+    }
+
+    len = strlen(name);
+    if (len < 14U || len >= sizeof(bioz_log_transfer_name))
+    {
+        return false;
+    }
+
+    if (strncmp(name, "bioz-log-", 9U) != 0)
+    {
+        return false;
+    }
+
+    if (strcmp(&name[len - 4U], ".dat") != 0)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < len; i++)
+    {
+        char c = name[i];
+        bool ok = ((c >= 'a') && (c <= 'z')) ||
+                  ((c >= 'A') && (c <= 'Z')) ||
+                  ((c >= '0') && (c <= '9')) ||
+                  (c == '-') || (c == '_') || (c == '.');
+        if (!ok)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 void generateMessage(unsigned length)
 {
@@ -392,7 +513,7 @@ int createNextBiozLogFile()
 
     int max_n = -1;
     char file_prefix[] = "bioz-log-";
-    char file_extension[] = ".csv";
+    char file_extension[] = ".dat";
     char temp_filename[MAXLEN];
 
     if ((err = f_opendir(&dir, cwd)) == FR_OK)
@@ -436,14 +557,6 @@ int createNextBiozLogFile()
     struct tm *timeinfo = localtime(&rawtime);
 
     snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%02d%02d%02d%s",
-             file_prefix,
-             timeinfo->tm_year + 1900,
-             timeinfo->tm_mon + 1,
-             timeinfo->tm_mday,
-             timeinfo->tm_hour,
-             timeinfo->tm_min,
-             timeinfo->tm_sec,
-             file_extension);snprintf(temp_filename, MAXLEN, "%s%04d%02d%02d-%02d%02d%02d%s",
          file_prefix,
          timeinfo->tm_year + 1900,
          timeinfo->tm_mon + 1,
@@ -460,14 +573,6 @@ int createNextBiozLogFile()
     if ((err = f_open(&file, (const TCHAR *)temp_filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK)
     {
         printf("Error creating file: %s\n", FF_ERRORS[err]);
-        return err;
-    }
-
-    const char *csv_header = "timestamp,Q,I,F\n";
-    if ((err = f_write(&file, csv_header, strlen(csv_header), &bytes_written)) != FR_OK)
-    {
-        printf("Error writing CSV header: %s\n", FF_ERRORS[err]);
-        f_close(&file);
         return err;
     }
 
@@ -516,6 +621,7 @@ int openLogFile()
         printf("Error opening log file: %s\n", FF_ERRORS[err]);
         return err;
     }
+    bioz_log_file_open = true;
     return FR_OK;
 }
 
@@ -532,6 +638,216 @@ int closeLogFile()
     {
         printf("Error closing log file: %s\n", FF_ERRORS[err]);
     }
+    else
+    {
+        bioz_log_file_open = false;
+    }
 
     return err;
+}
+
+int biozLogsSendList(uint8_t connId)
+{
+    DIR log_dir;
+    FILINFO log_info;
+    char line[96];
+
+    if (!mounted)
+    {
+        mount();
+    }
+
+    if (err != FR_OK)
+    {
+        biozLogSendText(connId, "logs:error:mount");
+        return err;
+    }
+
+    biozLogSendText(connId, "logs:begin");
+
+    err = f_opendir(&log_dir, cwd);
+    if (err != FR_OK)
+    {
+        biozLogSendText(connId, "logs:error:opendir");
+        return err;
+    }
+
+    while (1)
+    {
+        err = f_readdir(&log_dir, &log_info);
+        if (err != FR_OK || log_info.fname[0] == 0)
+        {
+            break;
+        }
+
+        if ((log_info.fattrib & AM_DIR) == 0 && biozLogNameIsValid(log_info.fname))
+        {
+            snprintf(line, sizeof(line), "logs:file:%s:%lu",
+                     log_info.fname, (unsigned long)log_info.fsize);
+            biozLogSendText(connId, line);
+        }
+    }
+
+    f_closedir(&log_dir);
+    biozLogSendText(connId, "logs:end");
+    return err;
+}
+
+int biozLogTransferStart(uint8_t connId, const char *log_name)
+{
+    FILINFO log_info;
+    char line[128];
+
+    if (bioz_log_file_open)
+    {
+        biozLogSendText(connId, "logs:error:busy");
+        return FR_DENIED;
+    }
+
+    if (!biozLogNameIsValid(log_name))
+    {
+        biozLogSendText(connId, "logs:error:name");
+        return FR_INVALID_NAME;
+    }
+
+    if (bioz_log_transfer_active)
+    {
+        biozLogTransferCancel();
+    }
+
+    if (!mounted)
+    {
+        mount();
+    }
+
+    if (err != FR_OK)
+    {
+        biozLogSendText(connId, "logs:error:mount");
+        return err;
+    }
+
+    err = f_stat(log_name, &log_info);
+    if (err != FR_OK)
+    {
+        biozLogSendText(connId, "logs:error:not_found");
+        return err;
+    }
+
+    err = f_open(&bioz_log_read_file, log_name, FA_READ);
+    if (err != FR_OK)
+    {
+        biozLogSendText(connId, "logs:error:open");
+        return err;
+    }
+
+    snprintf(bioz_log_transfer_name, sizeof(bioz_log_transfer_name), "%s", log_name);
+    bioz_log_transfer_conn_id = connId;
+    bioz_log_transfer_seq = 0;
+    bioz_log_transfer_in_flight = 0;
+    bioz_log_transfer_sent = 0;
+    bioz_log_transfer_size = (uint32_t)log_info.fsize;
+    bioz_log_transfer_read_open = true;
+    bioz_log_transfer_read_done = false;
+    bioz_log_transfer_active = true;
+
+    snprintf(line, sizeof(line), "logs:read_begin:%s:%lu",
+             bioz_log_transfer_name, (unsigned long)bioz_log_transfer_size);
+    biozLogSendText(connId, line);
+    return FR_OK;
+}
+
+void biozLogTransferCancel(void)
+{
+    if (bioz_log_transfer_active)
+    {
+        if (bioz_log_transfer_read_open)
+        {
+            f_close(&bioz_log_read_file);
+            bioz_log_transfer_read_open = false;
+        }
+        bioz_log_transfer_active = false;
+        bioz_log_transfer_read_done = false;
+        bioz_log_transfer_in_flight = 0;
+    }
+}
+
+void biozLogTransferAck(uint8_t connId, uint16_t next_seq)
+{
+    if (!bioz_log_transfer_active || connId != bioz_log_transfer_conn_id)
+    {
+        return;
+    }
+
+    if (next_seq <= bioz_log_transfer_seq)
+    {
+        bioz_log_transfer_in_flight = (uint16_t)(bioz_log_transfer_seq - next_seq);
+    }
+}
+
+void biozLogTransferProcess(void)
+{
+    bioz_log_transfer_packet_t packet;
+    UINT bytes_read = 0;
+    uint16_t payload_len;
+
+    if (!bioz_log_transfer_active)
+    {
+        return;
+    }
+
+    if (bioz_log_transfer_read_done)
+    {
+        if (bioz_log_transfer_in_flight == 0U)
+        {
+            biozLogTransferFinish();
+        }
+        return;
+    }
+
+    if (bioz_log_transfer_in_flight >= BIOZ_LOG_TRANSFER_WINDOW)
+    {
+        return;
+    }
+
+    payload_len = biozLogTransferPayloadLen(bioz_log_transfer_conn_id);
+    if (payload_len == 0U)
+    {
+        biozLogSendText(bioz_log_transfer_conn_id, "logs:error:mtu");
+        biozLogTransferCancel();
+        return;
+    }
+
+    packet.magic = BIOZ_LOG_TRANSFER_MAGIC;
+    packet.version = BIOZ_LOG_TRANSFER_VERSION;
+    packet.type = 1U;
+
+    err = f_read(&bioz_log_read_file, packet.data, payload_len, &bytes_read);
+    if (err != FR_OK)
+    {
+        biozLogSendText(bioz_log_transfer_conn_id, "logs:error:read");
+        biozLogTransferCancel();
+        return;
+    }
+
+    if (bytes_read > 0U)
+    {
+        packet.seq = bioz_log_transfer_seq++;
+        packet.len = (uint16_t)bytes_read;
+        datsSendData((dmConnId_t)bioz_log_transfer_conn_id,
+                     (const char *)&packet,
+                     (uint16_t)(sizeof(packet) - BIOZ_LOG_TRANSFER_CHUNK + bytes_read));
+        bioz_log_transfer_sent += bytes_read;
+        bioz_log_transfer_in_flight++;
+    }
+
+    if (bytes_read < payload_len)
+    {
+        f_close(&bioz_log_read_file);
+        bioz_log_transfer_read_open = false;
+        bioz_log_transfer_read_done = true;
+        if (bioz_log_transfer_in_flight == 0U)
+        {
+            biozLogTransferFinish();
+        }
+    }
 }

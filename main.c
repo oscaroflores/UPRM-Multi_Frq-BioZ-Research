@@ -89,7 +89,7 @@ uint8_t gHold[100];
 int errCnt;
 bool interrupt = 0;
 extern uint32_t sample_interval_us;
-extern sample_index;
+extern uint32_t sample_index;
 int samples_discarded;
 static wsfBufPoolDesc_t mainPoolDesc[] = {{16, 8}, {32, 4}, {192, 8}, {256, 16}};
 bool sample_ready = 0;
@@ -409,6 +409,10 @@ int main(void)
       {
         WsfTimerSleep();
       }
+    }
+    else
+    {
+      biozLogTransferProcess();
     }
   }
   printf("error count = %d\n", errCnt);

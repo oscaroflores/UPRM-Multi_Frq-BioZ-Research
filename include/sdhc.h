@@ -76,4 +76,14 @@ void setMessage(const char *message);
 int openLogFile();
 
 int closeLogFile();
+
+int biozLogsSendList(uint8_t connId);
+
+int biozLogTransferStart(uint8_t connId, const char *log_name);
+
+void biozLogTransferAck(uint8_t connId, uint16_t next_seq);
+
+void biozLogTransferProcess(void);
+
+void biozLogTransferCancel(void);
 #endif // EXAMPLES_MAX32655_SDHC_FTHR_INCLUDE_SDHC_H_
