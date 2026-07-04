@@ -42,6 +42,7 @@
 extern FIL file; // FFat File Object
 extern TCHAR *FF_ERRORS[20];
 extern char new_log_file[64];
+extern char imu_log_file[64];
 
 /***** FUNCTION PROTOTYPES *****/
 
@@ -70,10 +71,11 @@ int deleteFile(char *file_name);
 void waitCardInserted();
 
 int createNextBiozLogFile();
+int createNextIMULogFile();
 
 void setMessage(const char *message);
 
 int openLogFile();
-
+int openIMULogFile(const char *imu_filename);
 int closeLogFile();
 #endif // EXAMPLES_MAX32655_SDHC_FTHR_INCLUDE_SDHC_H_

@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "rtc.h"
+#include "att_api.h"
+#include "dats_api.h"
+#include "app_api.h"
 uint32_t start_time_ms;
 
 extern int current_freq_kHz;
@@ -30,12 +33,12 @@ extern int count;
 extern int errCnt;
 
 // Globals
+static double bioz_ohm_coeff = 1.0;
 uint32_t sample_interval_us = 0; // make accessible from main if needed
 uint32_t sample_index = 0;       // Declare as global variable
 double sr_bioz;
 double bioz_adc_osr;
 double ndiv;
-
 /**
  * @brief Change M divider value.
  *
@@ -221,9 +224,6 @@ int getDACOSR()
  */
 int getKDiv()
 {
-  /*
-  This function returns the K divider value
-  */
 
   uint8_t k_div = (regRead(0x17) & 0b00011110) >> 1; // Bits 4:1
   uint16_t k_div_table[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 8192, 8192};
@@ -308,10 +308,6 @@ double getBiozCurrent_uA()
  */
 void setFreq(int freq)
 {
-  /*
-  Configures frequency-specific settings for BioZ signal generation
-  Supports: 4kHz and 131khz
-  */
 
   switch (freq)
   {
@@ -330,18 +326,45 @@ void setFreq(int freq)
     break;
   }
 }
+/**
+ * @brief Get the M divider value.
+ *
+ * This function reads the M divider value from the MAX30009 registers.
+ * The M divider is used to set the frequency of the BioZ signal.
+ *
+ * @return The M divider value.
+ */
 int getMdiv(void)
 {
   int mdiv_high = (regRead(0x17) >> 6) & 0x03;
   int mdiv_low = regRead(0x18);
   return (mdiv_high << 8) | mdiv_low;
 }
+
+/**
+ * @brief Get the PLL clock frequency.
+ *
+ * This function calculates the PLL clock frequency based on the reference clock
+ * and the M divider value. It uses the formula:
+ * PLL_CLK = Ref_Clk_Hz * (M + 1)
+ *
+ * @return The PLL clock frequency in Hz.
+ */
 double getPllClk(void)
 {
   int M = getMdiv(); // Uses your getMdiv() function
   return getRefClkHz() * (M + 1);
 }
 
+/**
+ * @brief Get the BioZ frequency.
+ *
+ * This function calculates the BioZ frequency based on the PLL clock,
+ * K divider, and DAC oversampling rate. It uses the formula:
+ * F_BIOZ = PLL_CLK / (K_DIV * DAC_OSR)
+ *
+ * @return The BioZ frequency in Hz.
+ */
 double getBiozFreq(void)
 {
   int M = getMdiv();
@@ -379,6 +402,34 @@ double convertCountsToOhms(double count)
   return (count * V_REF) / (ADC_FS * gain * TWO_OVER_PI * i_mag);
 }
 
+double getBiozOhmCoeff(void)
+{
+  const double V_REF = 1.0;
+  const double TWO_OVER_PI = 2.0 / M_PI;
+  const double ADC_FS = pow(2, 19);
+
+  double gain = getBiozGain();
+  double i_mag = getBiozCurrent_uA() / 1e6;
+  if (gain <= 0 || i_mag <= 0)
+  {
+    return 0.0;
+  }
+  return V_REF / (ADC_FS * gain * TWO_OVER_PI * i_mag);
+}
+
+void setBiozOhmCoeff(double c)
+{
+  if (c > 0.0)
+  {
+    bioz_ohm_coeff = c;
+  }
+}
+
+double getBiozOhmCoeffCached(void)
+{
+  return bioz_ohm_coeff;
+}
+
 /**
  * @brief Calculate BioZ impedance from FIFO data.
  *
@@ -393,11 +444,8 @@ double convertCountsToOhms(double count)
  *
  * @return 0 on success, 1 for invalid data, 2 for marker, or 3 for error.
  */
-int calcBioZ(uint8_t buf[], double freqLogged)
+int calcBioZ(uint8_t buf[], bool freqLogged)
 {
-  /*
-  This function uses the readings from the FIFO register
-  */
 
   uint8_t x1[3], x2[3];
   int i, err = 0;
@@ -487,14 +535,22 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   }
 
   // --- Timestamp using sample index and sr_bioz ---
-  uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3)); // in miliseconds
-  sample_index++;                                                          // Increment sample index for next sample timestamp
+  uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
+  sample_index++;
+  double coeff = getBiozOhmCoeffCached();
+  double I_ohm = I * coeff;
+  double Q_ohm = Q * coeff;
 
   // Convert to Ohms
-  double I_ohm = convertCountsToOhms(I);
-  double Q_ohm = convertCountsToOhms(Q);
-  double phase_rad = atan2(Q_ohm, I_ohm);
-  double phase_deg = phase_rad * (180.0 / M_PI);
+  // double I_ohm = convertCountsToOhms(I);
+  // double Q_ohm = convertCountsToOhms(Q);
+  // // freq calc
+  double F_BIOZ = getBiozFreq();
+  // debug calcs
+
+  // double phase_rad = atan2(Q_ohm, I_ohm);
+  // double phase_deg = phase_rad * (180.0 / M_PI);
+
   // Debugging prints
 
   // printf("M Divider: %d\n", M);
@@ -511,15 +567,21 @@ int calcBioZ(uint8_t buf[], double freqLogged)
   // printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
 
   // -- Print the results to terminal --
-  printf("%lu\t", timestamp);
-  printf("%.1f\t", Q_ohm);
-  printf("%.1f\t", I_ohm);
-  printf("%.1f\t", freqLogged);
-  printf("phase: %f\n", phase_deg);
+  // printf("%lu\t", timestamp);
+  // printf("%.1f\t", Q_ohm);
+  // printf("%.1f\t", I_ohm);
+  // printf("%.1f\n", F_BIOZ);
+  // printf("%d\n", regRead(0x0A) & 0x80);
+  // printf("phase: %f\n", phase_deg);
 
   // SD card upload
   char log_entry[128];
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, freqLogged);
+
+  // Format the log entry with timestamp, Q, I, and F_BIOZ
+  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
+
+  // Send log entry via BLE
+  datsSendData(AppConnIsOpen(), log_entry, log_len);
 
   if (log_len < 0 || log_len >= sizeof(log_entry))
   {
@@ -527,6 +589,7 @@ int calcBioZ(uint8_t buf[], double freqLogged)
     return -1;
   }
 
+  // Write to SD card
   UINT written;
   if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK || written != log_len)
   {
