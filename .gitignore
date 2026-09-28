@@ -5,3 +5,4 @@ buildrv/
 *.bin
 *.hex
 __pycache__/
+flash.log
