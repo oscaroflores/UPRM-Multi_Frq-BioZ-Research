@@ -21,6 +21,18 @@
 #define MAX30009_FIFO_READ_MAX_BYTES \
   (MAX30009_FIFO_CMD_BYTES + (MAX30009_FIFO_READ_MAX_WORDS * MAX30009_FIFO_WORD_BYTES))
 
+/*
+ * Settling gap between SPI transactions. The original firmware had 75 us here and
+ * worked; removing it was an unforced change and is the leading suspect for the
+ * first version of this build producing no samples, so it is back. The MAX30009
+ * may need a minimum chip-select-high time that back-to-back transactions
+ * violate -- BIAsettings() issues about thirty writes in a row. Build with
+ * -DSPI_INTER_XACT_DELAY_US=0 to test that hypothesis deliberately.
+ */
+#ifndef SPI_INTER_XACT_DELAY_US
+#define SPI_INTER_XACT_DELAY_US 75
+#endif
+
 int initSPI(void);
 int shutdownSPI(void);
 uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, uint8_t rx_len);

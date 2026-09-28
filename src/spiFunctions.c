@@ -29,6 +29,7 @@
 /***** Definitions *****/
 
 #define SPI_SPEED 1000000 /* bit rate */
+
 #define SPI MXC_SPI1
 
 /* FIFO_DATA tag values, per datasheet Table 4 "FIFO Data Format". */
@@ -127,8 +128,13 @@ uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, uint8_t rx_len)
    * never a documented device requirement -- whittled down over time, removed
    * once, then silently reinstated. Left out here: if register access proves
    * unreliable without it, that is worth establishing explicitly rather than
-   * carrying a delay nobody can justify.
+   * carrying a delay nobody can justify. Restored after this build produced no
+   * samples -- see SPI_INTER_XACT_DELAY_US above.
    */
+#if SPI_INTER_XACT_DELAY_US > 0
+  MXC_Delay(MXC_DELAY_USEC(SPI_INTER_XACT_DELAY_US));
+#endif
+
   req.spi = SPI;
   req.txData = tx_buf;
   req.rxData = rx_buf;
