@@ -1,48 +1,20 @@
-# This file can be used to set build configuration
-# variables.  These variables are defined in a file called 
-# "Makefile" that is located next to this one.
+# Minimal BioZ acquisition spike.
+#
+# Deliberately has no BLE stack, no SD card, and no CLI -- just the MAX32655
+# talking to the MAX30009 and printing samples to the console. The point is a
+# reproducer small enough to trust: if this runs indefinitely without freezing,
+# the fault lives in one of the subsystems that is absent here, and they can be
+# added back one at a time.
+#
+# Deliberately NOT enabled (each was on in the full firmware):
+#   LIB_SDHC / FATFS_VERSION  -- FatFS, called from interrupt context there
+#   LIB_CLI                   -- the CLI handler IS the UART interrupt vector
+#   LIB_CORDIO + INIT_*       -- BLE stack and its WSF scheduler
+#
+# Any board with the MAX30009 wired to SPI1 works, since nothing here needs the
+# SD slot; the full project's FTHR_Apps_P1 requirement came from LIB_SDHC.
 
-# For instructions on how to use this system, see
-# https://analog-devices-msdk.github.io/msdk/USERGUIDE/#build-system
+# Console output only; no trace library.
+TRACE = 0
 
-# **********************************************************
-
-# Add your config here!
-# Add your config here!
-ifneq ($(BOARD),FTHR_Apps_P1)
-$(error ERR_NOTSUPPORTED: This project requires an SD card slot and is only supported for the MAX32655FTHR)
-endif
-
-# Enable SDHC library
-LIB_SDHC = 1
-# Use FatFS version R0.15
-FATFS_VERSION = ff15
-
-# Enable CLI library
-LIB_CLI = 1
-
-# Enable Cordio library
-LIB_CORDIO = 1
-
-# Cordio library options
-INIT_PERIPHERAL = 1
-INIT_CENTRAL = 0
-
-# TRACE option
-# Set to 0 to disable
-# Set to 1 to enable serial port trace messages
-# Set to 2 to enable verbose messages
-TRACE = 1
-
-# Add services directory to build
-IPATH += services
-VPATH += services
-
-# SET advertising name
-ADV_NAME?=DATS
-PROJ_CFLAGS += -DADV_NAME=\"$(ADV_NAME)\"
-
-
-### CONFIGURE security
-# /*! TRUE to initiate security upon connection*/
-PROJ_CFLAGS += -DINIT_SECURITY=FALSE
+# Keep the console UART's default 115200 baud (board.h CONSOLE_BAUD).

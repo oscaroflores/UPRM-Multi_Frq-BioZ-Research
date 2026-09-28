@@ -1,205 +1,223 @@
+/*
+ * MAX30009 configuration and BioZ decoding for multi-frequency BIA.
+ *
+ * Register values are carried over verbatim from the full firmware so this spike
+ * measures the same thing; only the destination changed, from BLE + SD card to
+ * the console.
+ *
+ * Every function here performs SPI register access, so none of them may be
+ * called from interrupt context. See the note at the top of spiFunctions.c.
+ */
+
+#include "bioZ.h"
+
 #include "MAX30009.h"
-#include "MAX32655.h"
-#include "board.h"
-#include "dma.h"
-#include "led.h"
 #include "mxc_delay.h"
 #include "mxc_device.h"
-#include "mxc_pins.h"
-#include "mxc_sys.h"
-#include "nvic_table.h"
-#include "sdhc.h"
-#include "spi.h"
 #include "spiFunctions.h"
-#include "tmr.h"
-#include "uart.h"
 #include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include "rtc.h"
-#include "att_api.h"
-#include "dats_api.h"
-#include "app_api.h"
-uint32_t start_time_ms;
 
-extern int current_freq_kHz;
-extern uint8_t gReadBuf[100];
-uint8_t adcIData[10];
-uint8_t adcQData[10];
-extern uint8_t IMag;
-extern int count;
-extern int errCnt;
+/***** Globals *****/
 
-// Globals
-static double bioz_ohm_coeff = 1.0;
-uint32_t sample_interval_us = 0; // make accessible from main if needed
-uint32_t sample_index = 0;       // Declare as global variable
 double sr_bioz;
-double bioz_adc_osr;
-double ndiv;
-/**
- * @brief Change M divider value.
- *
- * @param val The value to set for the M divider.
- *
- * This function changes the M divider value, which spans over two separate registers.
- */
+static double bioz_adc_osr;
+static double ndiv;
+static double bioz_ohm_coeff = 1.0;
+static uint32_t sample_index;
+
+/* Cached so the decode path does no register reads: getBiozFreq() alone costs
+ * four, for a value that only changes when the tone does. */
+static double bioz_freq_cached;
+
+/* Settling policy state. */
+static uint8_t cur_tone;
+static uint16_t visit_seen;
+static uint16_t visit_kept;
+static bool tone_just_switched;
+static uint32_t decoded_count;
+static uint32_t kept_count;
+
+/***** Configuration *****/
+
 void setMdiv(int val)
 {
-  /*
-  This function is specifically to change the M divider value
-  as it spans over two seperate registers
+  uint32_t V = (uint32_t)val;
 
-
-  */
-  uint32_t V = val;
-
-  uint8_t a = V >> 8;
-
-  uint8_t b = V & 0xFF;
-
-  changeReg(0x17, a, 7, 2); // step 3:
-  changeReg(0x18, b, 7, 8); // MDIV
+  changeReg(0x17, (uint8_t)(V >> 8), 7, 2);
+  changeReg(0x18, (uint8_t)(V & 0xFF), 7, 8);
 }
 
-/**
- * @brief Configure the BioZ BIA settings for the MAX30009.
- *
- * This function initializes the BioZ BIA settings by configuring various registers
- * to set up the device for BioZ measurements. It includes PLL, clock, gain setup,
- * basic sensor/AFE configuration, interrupt setup, and DAC/ADC OSR configuration.
- * It also clears the status register and brings the device out of shutdown.
- * It must be called before starting any BioZ measurements.
- */
-void BIAsettings()
+void BIAsettings(void)
 {
-  // --- Reset and bring device out of shutdown ---
-  regWrite(0x20, 1 << 2); // BIOZ_BG_EN
-  regWrite(0x11, 0);      // clear SHDN
-  regWrite(0x17, 0);      // clear PLL_EN
-  regWrite(0x1A, 0);      // clear REF_CLK_SEL
-  regWrite(0x11, 1);      // issue RESET
+  /* --- Reset --- */
+  regWrite(0x20, 1 << 2); /* BIOZ_BG_EN */
+  regWrite(0x11, 0);      /* clear SHDN */
+  regWrite(0x17, 0);      /* clear PLL_EN */
+  regWrite(0x1A, 0);      /* clear REF_CLK_SEL */
+  regWrite(0x11, 1);      /* RESET */
 
-  // --- Clear status ---
-  regRead(0x00); // read status to clear
+  /*
+   * The datasheet gives the bandgap up to 6 ms to settle and wants it up before
+   * PLL_EN is set; a reset also needs time before the part accepts configuration.
+   * The original had no delay here at all.
+   */
+  MXC_Delay(MXC_DELAY_MSEC(10));
 
-  // --- PLL, Clock and Gain Setup ---
+  regRead(0x00); /* read status to clear */
+
+  /* --- PLL and clock: 32768 Hz x (512 + 1) = 16,809,984 Hz --- */
   regWrite(0x18, 0xBB);
   regWrite(0x19, 0x01);
-  regWrite(0x1A, (0 << 6) | (1 << 5));
+  regWrite(0x1A, (0 << 6) | (1 << 5)); /* internal osc, 32768 Hz */
   regWrite(0x17, (1 << 6) | (0 << 5) | (2 << 1) | 1);
 
-  // --- Basic Sensor/AFE Configuration ---
-  regWrite(0x10, 0x00); // BIOZ_CONFIG
-  regWrite(0x12, 0x04); // CMDET_EN
-  regWrite(0x13, 0x00); // No Lead-Off Comparator
-  regWrite(0x14, 0x00); // Reserved
-  regWrite(0x21, 0x20); // HIZ after reset
-  regWrite(0x22, 0x28); // BIOZ_VDRV_MAG = 2 (2.5x), BIOZ_IDRV_RGE = 2 (32uA)
-  regWrite(0x23, 0x00); // default
-  regWrite(0x24, 0x33); // Amp Biasing
-  regWrite(0x25, 0xCA); // AMP_RGE and bandwidth
+  /* --- AFE --- */
+  regWrite(0x10, 0x00); /* BIOZ_CONFIG */
+  regWrite(0x12, 0x04); /* CMDET_EN */
+  regWrite(0x13, 0x00); /* no lead-off comparator */
+  regWrite(0x14, 0x00);
+  /*
+   * 0x21 is BioZ Configuration 2: DHPF[7:6], DLPF[5:3], CMP[2:1],
+   * EN_BIOZ_THRESH[0] -- nothing to do with HIZ, as the original comment claimed.
+   * 0x20 means DHPF bypass and DLPF = 4, so the digital low-pass filter is
+   * ENABLED at 0.25 x SR_BIOZ (64 Hz here). Because the cutoff is a fraction of
+   * the sample rate, this filter's settling measured in SAMPLES does not change
+   * with rate -- the leading suspect for the 7-sample discard.
+   */
+  regWrite(0x21, 0x20);
+  regWrite(0x22, 0x28); /* VDRV_MAG = 2 (250 mV), IDRV_RGE = 2 -> 45.25 uA peak */
+  regWrite(0x23, 0x00);
+  regWrite(0x24, 0x33); /* AHPF = 3 (1 kHz corner), GAIN = 3 (10 V/V) */
+  regWrite(0x25, 0xCA); /* AMP_RGE and bandwidth */
   regWrite(0x26, 0x00);
   regWrite(0x27, 0xFF);
-  regWrite(0x28, 0x12); // Drive Freq Trim
-  regWrite(0x41, 0x06); // BIOZ_MUX Config, MUX_EN
-  regWrite(0x42, 0x01); // MUX2
-  regWrite(0x43, 0xA0); // BIOZ_RBIAS and Bias Driver
-  regWrite(0x44, 0xD1); // Refbuf trim
+  regWrite(0x28, 0x12); /* drive frequency trim */
+  regWrite(0x41, 0x06); /* MUX_EN + CONNECT_CAL_ONLY -- electrodes connected */
+  regWrite(0x42, 0x01);
+  regWrite(0x43, 0xA0); /* RBIAS and bias driver */
+  /*
+   * 0x44 is BIST_R_ERR: the factory-measured error of the internal BIST resistor,
+   * not a "refbuf trim". Writing it destroys a calibration datum, and the ADI
+   * reference never touches this register, so the write is left out here.
+   */
   regWrite(0x50, 0x00);
   regWrite(0x51, 0x00);
-  regWrite(0x58, 0x07); // All clock gates on
+  regWrite(0x58, 0x07); /* all clock gates on */
 
-  // --- Interrupt Setup ---
-  regWrite(0x80, 0xA0); // Enable A_FULL_EN and FIFO_DATA_RDY_EN
-  regWrite(0x81, 0x00); // Optional: disable error interrupts for now
+  /* --- Interrupts: A_FULL only ---
+   * The original also set FIFO_DATA_RDY_EN (0xA0), leaving two sources driving
+   * INTB with no way to tell them apart -- and FIFO_DATA_RDY asserts on every
+   * sample, so it produced an interrupt per sample whatever the threshold was. */
+  regWrite(0x80, 0x80); /* A_FULL_EN */
+  regWrite(0x81, 0x00);
 
-  // --- DAC/ADC OSR Config ---
-  regWrite(0x20, 0xA0); // DAC_OSR = 2 (128), ADC_OSR = 5 (256), BG_EN, Q_EN, I_EN = 0
+  /*
+   * A_FULL asserts when the FIFO holds (256 - FIFO_A_FULL) samples. 0xF0 -> 240
+   * trips at 16 samples = 8 measurements = one tone visit at the 7-discard +
+   * 1-keep cadence, so one interrupt carries one visit (~16 Hz) with 240 samples
+   * of slack behind it. The original never wrote this register, leaving it at its
+   * reset value 0x7F, which asserts at 129 samples.
+   */
+  regWrite(0x0D, 0xF0);
 
-  // --- Note: Must call setFreq() after this to finalize DAC/ADC and KDIV settings
-  changeReg(0x17, 0, 5, 1); // NDIV = 0 (512)
+  /* --- DAC/ADC OSR: DAC 128, ADC 128 -> SR_BIOZ = 256.5 sps ---
+   * BG_EN, Q_EN and I_EN stay clear; biozEnable() sets them. */
+  regWrite(0x20, 0xA0);
+
+  changeReg(0x17, 0, 5, 1); /* NDIV = 0 -> 512 */
   setMdiv(512);
+
+  cur_tone = 0;
+  visit_seen = 0;
+  visit_kept = 0;
 }
 
-/**
- * @brief Get the reference clock frequency in Hz.
- *
- * This function determines the reference clock frequency based on the
- * settings in the MAX30009 registers. It checks the reference clock selection
- * and clock frequency selection bits to return the appropriate frequency.
- *
- * @return The reference clock frequency in Hz.
- */
-uint32_t getRefClkHz()
+void biozEnable(void)
 {
+  changeReg(0x20, 0x7, 2, 3); /* BG_EN | Q_EN | I_EN */
+}
 
-  uint8_t ref_clk_sel = regRead(0x1A) & 0b01000000;  // Bit 6
-  uint8_t clk_freq_sel = regRead(0x1A) & 0b00100000; // Bit 5
-  // printf("ref_clk_sel: %d\t", ref_clk_sel);
-  // printf("clk_freq_sel: %d\n", clk_freq_sel);
-  if (ref_clk_sel == 0)
+void biozDisable(void)
+{
+  changeReg(0x20, 0x0, 2, 3);
+}
+
+void setFreq(int freq)
+{
+  /*
+   * KDIV only. F_BIOZ = PLL_CLK / (KDIV x DAC_OSR):
+   *   KDIV = 32 -> 16809984 / (32 x 128) =   4,104 Hz
+   *   KDIV =  1 -> 16809984 / ( 1 x 128) = 131,328 Hz
+   * ADI's reference treats DAC_OSR, KDIV, MDIV, NDIV and ADC_OSR as one
+   * coordinated sequence; this moves KDIV alone, a 32x swing. Whether both
+   * endpoints sit inside the PLL's specified range is unverified.
+   */
+  switch (freq)
   {
-    // Internal oscillator
-    return (clk_freq_sel == 0) ? 32000 : 32768;
-  }
-  else
-  {
-    // External oscillator
-    return (clk_freq_sel == 0) ? 32000 : 32768;
+  case 0:
+    changeReg(0x17, 5, 4, 4); /* KDIV = 32 -> ~4 kHz */
+    break;
+
+  case 1:
+    changeReg(0x17, 0, 4, 4); /* KDIV = 1 -> ~131 kHz */
+    break;
+
+  default:
+    printf("# invalid tone: %d\n", freq);
+    break;
   }
 }
 
-/**
- * @brief Get the sample interval in seconds.
- *
- * This function calculates the sample interval based on the reference clock frequency,
- * M divider, N divider, and ADC oversampling rate.
- *
- * @return The sample interval in seconds.
- */
-double getSampleInterval()
+/***** Register-derived quantities *****/
+
+uint32_t getRefClkHz(void)
+{
+  int reg = regRead(0x1A);
+  if (reg < 0)
+  {
+    return 32768; /* the configured value; readback failed */
+  }
+
+  /* Both branches were identical in the original and remain so: REF_CLK_SEL
+   * picks internal vs external, CLK_FREQ_SEL picks the frequency. */
+  return ((reg & 0x20) == 0) ? 32000 : 32768;
+}
+
+double getSampleInterval(void)
 {
   uint32_t ref_clk = getRefClkHz();
 
-  int mdiv_high = (regRead(0x17) >> 6) & 0x03;
-  int mdiv_low = regRead(0x18);
-  int mdiv = (mdiv_high << 8) | mdiv_low;
-  // printf("M Divider: %d\n", mdiv);
+  int r17 = regRead(0x17);
+  int r18 = regRead(0x18);
+  int r20 = regRead(0x20);
+  if (r17 < 0 || r18 < 0 || r20 < 0)
+  {
+    return 0.0;
+  }
 
+  int mdiv = (((r17 >> 6) & 0x03) << 8) | (r18 & 0xFF);
   double pll_clk = (double)ref_clk * (mdiv + 1);
-  // printf("PLL Clock: %.2f Hz\n", pll_clk);
-  uint8_t ndiv_raw = (regRead(0x17) >> 5) & 0x01;
-  ndiv = (ndiv_raw == 0) ? 512.0 : 1024.0;
-  // printf("N Divider: %.0f\n", ndiv);
 
-  uint8_t adc_osr_raw = (regRead(0x20) >> 3) & 0x07;
-  uint16_t adc_osr_table[] = {8, 16, 32, 64, 128, 256, 512, 1024};
-  bioz_adc_osr = adc_osr_table[adc_osr_raw];
-  // printf("BioZ ADC OSR: %.0f\n", bioz_adc_osr);
+  ndiv = (((r17 >> 5) & 0x01) == 0) ? 512.0 : 1024.0;
+
+  const uint16_t adc_osr_table[] = {8, 16, 32, 64, 128, 256, 512, 1024};
+  bioz_adc_osr = adc_osr_table[(r20 >> 3) & 0x07];
 
   sr_bioz = pll_clk / (ndiv * bioz_adc_osr);
-  // printf("SR: %.4f\n", sr_bioz); // Prints with more decimal places
 
-  if (sr_bioz == 0.0)
-    return 0.0;
-  return 1 / sr_bioz;
+  return (sr_bioz == 0.0) ? 0.0 : (1.0 / sr_bioz);
 }
 
-/**
- * @brief Get the DAC oversampling rate.
- *
- * This function reads the DAC oversampling rate from the MAX30009 registers.
- * It returns the oversampling rate in terms of samples per second.
- * The possible values are 32, 64, 128, or 256.
- * @return The DAC oversampling rate in samples per second.
- */
-int getDACOSR()
+int getDACOSR(void)
 {
-  uint8_t val = (regRead(0x20) & 0b11000000) >> 6;
-  switch (val)
+  int reg = regRead(0x20);
+  if (reg < 0)
+  {
+    return 128;
+  }
+
+  switch ((reg & 0xC0) >> 6)
   {
   case 0:
     return 32;
@@ -210,48 +228,54 @@ int getDACOSR()
   case 3:
     return 256;
   default:
-    return 32; // fallback
+    return 32;
   }
 }
 
-/**
- * @brief Get the K divider value.
- *
- * This function reads the K divider value from the MAX30009 registers.
- * The K divider is used to set the frequency of the BioZ signal.
- *
- * @return The K divider value.
- */
-int getKDiv()
+int getKDiv(void)
 {
-
-  uint8_t k_div = (regRead(0x17) & 0b00011110) >> 1; // Bits 4:1
-  uint16_t k_div_table[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 8192, 8192};
-
-  if (k_div < 14)
+  int reg = regRead(0x17);
+  if (reg < 0)
   {
-    return k_div_table[k_div];
+    return 1;
   }
-  else
-  {
-    return 8192;
-  }
+
+  uint8_t k_div = (uint8_t)((reg & 0x1E) >> 1);
+  const uint16_t k_div_table[] = {1,   2,   4,    8,    16,   32,   64,   128,
+                                  256, 512, 1024, 2048, 4096, 8192, 8192, 8192};
+  return k_div_table[k_div];
 }
 
-/**
- * @brief Get the BioZ gain value.
- *
- * This function reads the BioZ gain setting from the MAX30009 registers.
- * It returns the gain factor based on the bits set in the register.
- *
- * @return The BioZ gain factor.
- */
-double getBiozGain()
+int getMdiv(void)
 {
-  uint8_t reg_val = regRead(0x24);    // If your doc says 0x24, change this
-  uint8_t gain_bits = reg_val & 0x03; // Bits [1:0]
+  int r17 = regRead(0x17);
+  int r18 = regRead(0x18);
+  if (r17 < 0 || r18 < 0)
+  {
+    return 512;
+  }
+  return (((r17 >> 6) & 0x03) << 8) | (r18 & 0xFF);
+}
 
-  switch (gain_bits)
+double getPllClk(void)
+{
+  return (double)getRefClkHz() * (getMdiv() + 1);
+}
+
+double getBiozFreq(void)
+{
+  return getPllClk() / ((double)getKDiv() * (double)getDACOSR());
+}
+
+double getBiozGain(void)
+{
+  int reg = regRead(0x24);
+  if (reg < 0)
+  {
+    return -1.0;
+  }
+
+  switch (reg & 0x03)
   {
   case 0x00:
     return 1.0;
@@ -262,144 +286,32 @@ double getBiozGain()
   case 0x03:
     return 10.0;
   default:
-    printf("Invalid GAIN bits: %u\n", gain_bits);
     return -1.0;
   }
 }
 
-/**
- * @brief Get the BioZ current in microamperes.
- *
- * This function reads the BioZ current settings from the MAX30009 registers
- * and calculates the current in microamperes based on the VDRV_MAG and IDRV_RGE settings.
- * It uses predefined values for VDRV_MAG and IDRV_RGE to compute the current.
- *
- * @return The BioZ current in microamperes (µA).
- */
-double getBiozCurrent_uA()
+double getBiozCurrent_uA(void)
 {
-  uint8_t reg_val = regRead(0x22);
-
-  uint8_t vdrv_mag_bits = (reg_val >> 4) & 0x03; // bits 5:4
-  uint8_t idrv_rge_bits = (reg_val >> 2) & 0x03; // bits 3:2
-
-  // VDRV_MAG mV values
-  const double vdrv_mag_mv[] = {50.0, 100.0, 250.0, 500.0}; // in mV
-  // IDRV_RGE resistor values (in Ohms)
-  const double r_idrv[] = {552500.0, 110500.0, 5525.0, 276250.0}; // in Ohms
-
-  double vdrv_volts = vdrv_mag_mv[vdrv_mag_bits] / 1000.0;
-  double r = r_idrv[idrv_rge_bits];
-
-  double i_amperes = vdrv_volts / r; // I = V / R
-  return (i_amperes * 1e6);          // return µA
-}
-
-/**
- * @brief Set the frequency for BioZ signal generation.
- *
- * This function configures the frequency-specific settings for BioZ signal generation.
- * It supports two frequencies: 4 kHz and 131 kHz.
- *
- * @param freq The frequency to set:
- *             0 for 4 kHz, 1 for 131 kHz.
- *
- * @note Only supports 4kHz and 131 kHz. Refactoring necessary for other frequencies.
- */
-void setFreq(int freq)
-{
-
-  switch (freq)
+  int reg = regRead(0x22);
+  if (reg < 0)
   {
-  case 0:
-    changeReg(0x17, 5, 4, 4); // k_div = 32, 4kHz
-
-    break;
-
-  case 1:
-    changeReg(0x17, 0, 4, 4); // k_div = 1, 131kHz
-
-    break;
-
-  default:
-    printf("Invalid frequency: %d kHz\n", freq);
-    break;
-  }
-}
-/**
- * @brief Get the M divider value.
- *
- * This function reads the M divider value from the MAX30009 registers.
- * The M divider is used to set the frequency of the BioZ signal.
- *
- * @return The M divider value.
- */
-int getMdiv(void)
-{
-  int mdiv_high = (regRead(0x17) >> 6) & 0x03;
-  int mdiv_low = regRead(0x18);
-  return (mdiv_high << 8) | mdiv_low;
-}
-
-/**
- * @brief Get the PLL clock frequency.
- *
- * This function calculates the PLL clock frequency based on the reference clock
- * and the M divider value. It uses the formula:
- * PLL_CLK = Ref_Clk_Hz * (M + 1)
- *
- * @return The PLL clock frequency in Hz.
- */
-double getPllClk(void)
-{
-  int M = getMdiv(); // Uses your getMdiv() function
-  return getRefClkHz() * (M + 1);
-}
-
-/**
- * @brief Get the BioZ frequency.
- *
- * This function calculates the BioZ frequency based on the PLL clock,
- * K divider, and DAC oversampling rate. It uses the formula:
- * F_BIOZ = PLL_CLK / (K_DIV * DAC_OSR)
- *
- * @return The BioZ frequency in Hz.
- */
-double getBiozFreq(void)
-{
-  int M = getMdiv();
-  double PLL_CLK = getRefClkHz() * (M + 1);
-  return PLL_CLK / (getKDiv() * getDACOSR());
-}
-
-/**
- * @brief Convert ADC counts to resistance in Ohms.
- *
- * @param count The ADC count value to convert.
- *
- * This function converts the ADC counts from the BioZ measurement
- * to resistance in Ohms using the formula:
- *
- * R = (count * V_REF) / (ADC_FS * gain * (2/π) * I)
- *
- * @return The calculated resistance in Ohms.
- */
-double convertCountsToOhms(double count)
-{
-  const double V_REF = 1.0;
-  const double TWO_OVER_PI = 2.0 / M_PI;
-  const double ADC_FS = pow(2, 19);
-
-  double gain = getBiozGain();
-  double i_mag = getBiozCurrent_uA() / 1e6;
-
-  if (gain <= 0 || i_mag <= 0)
-  {
-    printf("Invalid gain or current. Gain=%.2f, I=%.6f A\n", gain, i_mag);
-    return 0.0;
+    return -1.0;
   }
 
-  return (count * V_REF) / (ADC_FS * gain * TWO_OVER_PI * i_mag);
+  uint8_t vdrv_mag_bits = (uint8_t)((reg >> 4) & 0x03);
+  uint8_t idrv_rge_bits = (uint8_t)((reg >> 2) & 0x03);
+
+  const double vdrv_mag_mv[] = {50.0, 100.0, 250.0, 500.0};
+  const double r_idrv[] = {552500.0, 110500.0, 5525.0, 276250.0};
+
+  /*
+   * Returns the PEAK amplitude. The datasheet quotes drive currents in RMS, so
+   * 0x28 -> 45.249 uA peak is the same current as its "32 uA" figure
+   * (45.249 / sqrt(2) = 31.996). Both conventions are correct; they are just
+   * different conventions.
+   */
+  double i_amperes = (vdrv_mag_mv[vdrv_mag_bits] / 1000.0) / r_idrv[idrv_rge_bits];
+  return i_amperes * 1e6;
 }
 
 double getBiozOhmCoeff(void)
@@ -410,10 +322,18 @@ double getBiozOhmCoeff(void)
 
   double gain = getBiozGain();
   double i_mag = getBiozCurrent_uA() / 1e6;
-  if (gain <= 0 || i_mag <= 0)
+
+  if (gain <= 0.0 || i_mag <= 0.0)
   {
     return 0.0;
   }
+
+  /*
+   * Matches ADI's reference conversion: 2^19 x gain x (2/pi) x I_peak. Note this
+   * yields the raw ratio, with no offset subtraction and no phase de-rotation --
+   * the datasheet's calibration procedure supplies both, and until it is
+   * implemented the absolute value carries an unknown error.
+   */
   return V_REF / (ADC_FS * gain * TWO_OVER_PI * i_mag);
 }
 
@@ -430,172 +350,137 @@ double getBiozOhmCoeffCached(void)
   return bioz_ohm_coeff;
 }
 
-/**
- * @brief Calculate BioZ impedance from FIFO data.
- *
- * @param buf The buffer containing the FIFO data.
- *
- * This function processes the FIFO data buffer to extract
- * the in-phase (I) and quadrature (Q) components of the BioZ signal.
- * It determines which data array corresponds to the
- * in-phase and quadrature components based on the first byte of each array.
- * It then converts the ADC counts to resistance in Ohms
- * and calculates the timestamp for the sample.
- *
- * @return 0 on success, 1 for invalid data, 2 for marker, or 3 for error.
- */
-int calcBioZ(uint8_t buf[], bool freqLogged)
+void biozRefreshCache(void)
 {
+  double c = getBiozOhmCoeff();
+  if (c > 0.0)
+  {
+    setBiozOhmCoeff(c);
+  }
+  else
+  {
+    /* Say so, rather than silently leaving the coefficient at 1.0 -- which would
+     * report raw counts as ohms and look entirely plausible. */
+    printf("# WARNING ohm coefficient readback failed, keeping %.9f\n", bioz_ohm_coeff);
+  }
+
+  getSampleInterval(); /* refreshes sr_bioz */
+  bioz_freq_cached = getBiozFreq();
+}
+
+/***** Decoding *****/
+
+bool biozToneJustSwitched(void)
+{
+  bool v = tone_just_switched;
+  tone_just_switched = false;
+  return v;
+}
+
+uint32_t biozDecodedCount(void)
+{
+  return decoded_count;
+}
+
+uint32_t biozKeptCount(void)
+{
+  return kept_count;
+}
+
+/** @brief Sign-extend a 20-bit two's-complement sample. */
+static int32_t sign_extend_20(uint32_t raw)
+{
+  if (raw & 0x80000ul)
+  {
+    return (int32_t)raw - 0x100000l;
+  }
+  return (int32_t)raw;
+}
+
+int calcBioZ(uint8_t buf[], bool unused)
+{
+  (void)unused;
 
   uint8_t x1[3], x2[3];
-  int i, err = 0;
 
-  for (i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++)
   {
     x1[i] = buf[i];
     x2[i] = buf[i + 3];
   }
 
-  uint8_t a = x1[0] & 0xF0;
-  uint8_t b = x2[0] & 0xF0;
+  uint8_t a = (uint8_t)(x1[0] & 0xF0);
+  uint8_t b = (uint8_t)(x2[0] & 0xF0);
 
-  /***************************************************
-  Find which array is Quadrature phase and which is In phase
-  ********************************************************/
+  uint32_t adcI, adcQ;
+
+  /* Tag 0x1 is in-phase, 0x2 is quadrature (datasheet Table 4). */
   if ((a == 0x10) && (b == 0x20))
   {
-    adcIData[0] = (x1[0] & 0x0F);
-    adcIData[1] = x1[1];
-    adcIData[2] = x1[2];
-
-    adcQData[0] = (x2[0] & 0x0F);
-    adcQData[1] = x2[1];
-    adcQData[2] = x2[2];
+    adcI = ((uint32_t)(x1[0] & 0x0F) << 16) | ((uint32_t)x1[1] << 8) | x1[2];
+    adcQ = ((uint32_t)(x2[0] & 0x0F) << 16) | ((uint32_t)x2[1] << 8) | x2[2];
   }
-  else if ((a == 0x20) && (b == (0x10)))
+  else if ((a == 0x20) && (b == 0x10))
   {
-    adcIData[0] = (x2[0] & 0x0F);
-    adcIData[1] = x2[1];
-    adcIData[2] = x2[2];
-
-    adcQData[0] = (x1[0] & 0x0F);
-    adcQData[1] = x1[1];
-    adcQData[2] = x1[2];
-  }
-  else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
-           x1[2] == 0xFF && x2[2] == 0xFF)
-  {
-    printf("Invalid Data\n");
-    return 1;
-  }
-  else if (x1[0] == 0xFF && x2[0] == 0xFF && x1[1] == 0xFF && x2[1] == 0xFF &&
-           x1[2] == 0xFE && x2[2] == 0xFF)
-  {
-    printf("Marker\n");
-    return 2;
+    adcI = ((uint32_t)(x2[0] & 0x0F) << 16) | ((uint32_t)x2[1] << 8) | x2[2];
+    adcQ = ((uint32_t)(x1[0] & 0x0F) << 16) | ((uint32_t)x1[1] << 8) | x1[2];
   }
   else
   {
-    errCnt++;
     return 3;
   }
 
-  double I, Q, temp;
-  uint32_t L, d;
+  decoded_count++;
+  visit_seen++;
 
-  uint32_t adcI = adcIData[2] + (adcIData[1] << 8) + (adcIData[0] << 16);
-  uint32_t adcQ = adcQData[2] + (adcQData[1] << 8) + (adcQData[0] << 16);
-
-  if (adcI >> 19 == 1)
+  if (visit_seen <= BIOZ_SETTLE_DISCARD)
   {
-    L = (adcI & 0x7FFFF);
-    d = 0x80000;
-    I = L;
-    temp = d;
-    I = I - temp;
-    adcI = adcI >> 1;
-  }
-  else
-  {
-    I = adcI;
+    return 0; /* still settling after the tone change */
   }
 
-  if (adcQ >> 19 == 1)
-  {
-    L = (adcQ & 0x7FFFF);
-    d = 0x80000;
-    Q = L;
-    temp = d;
-    Q = Q - temp;
-    adcQ = adcQ >> 1;
-  }
-  else
-  {
-    Q = adcQ;
-  }
+  int32_t I = sign_extend_20(adcI);
+  int32_t Q = sign_extend_20(adcQ);
 
-  // --- Timestamp using sample index and sr_bioz ---
-  uint32_t timestamp = ((uint32_t)(sample_index * (1.0 / sr_bioz) * 1e3));
-  sample_index++;
   double coeff = getBiozOhmCoeffCached();
-  double I_ohm = I * coeff;
-  double Q_ohm = Q * coeff;
+  double I_ohm = (double)I * coeff;
+  double Q_ohm = (double)Q * coeff;
 
-  // Convert to Ohms
-  // double I_ohm = convertCountsToOhms(I);
-  // double Q_ohm = convertCountsToOhms(Q);
-  // // freq calc
-  double F_BIOZ = getBiozFreq();
-  // debug calcs
-
-  // double phase_rad = atan2(Q_ohm, I_ohm);
-  // double phase_deg = phase_rad * (180.0 / M_PI);
-
-  // Debugging prints
-
-  // printf("M Divider: %d\n", M);
-  // printf("Ref Clock: %d Hz\n", getRefClkHz());
-  // printf("DAC OSR: %d\n", getDACOSR());
-  // printf("K Divider: %d\n", getKDiv());
-  // printf("BioZ Frequency: %.2f Hz\n", F_BIOZ);
-  // printf("t = %lu ms\tFreq = %f kHz\tQ = %.2f\tI = %.2f, adc= %.2f\n", timestamp, F_BIOZ, Q, I, bioz_adc_osr);
-  // printf("overflow count = %d\n", regRead(0x0A) & 0x0F); // Read overflow count from register 0x1B
-  // printf("SR: %.4f\n", sr_bioz);
-  // printf("gain = %f\n", getBiozGain());
-
-  // printf("OVF: %d\n", regRead(0x0A) & 0x80); // Read overflow count from register 0x0A
-  // printf("Stimulus current = %f uA\n", getBiozCurrent_uA());
-
-  // -- Print the results to terminal --
-  // printf("%lu\t", timestamp);
-  // printf("%.1f\t", Q_ohm);
-  // printf("%.1f\t", I_ohm);
-  // printf("%.1f\n", F_BIOZ);
-  // printf("%d\n", regRead(0x0A) & 0x80);
-  // printf("phase: %f\n", phase_deg);
-
-  // SD card upload
-  char log_entry[128];
-
-  // Format the log entry with timestamp, Q, I, and F_BIOZ
-  int log_len = snprintf(log_entry, sizeof(log_entry), "%lu,%.2f,%.2f,%.2f\n", timestamp, Q_ohm, I_ohm, F_BIOZ);
-
-  // Send log entry via BLE
-  datsSendData(AppConnIsOpen(), log_entry, log_len);
-
-  if (log_len < 0 || log_len >= sizeof(log_entry))
+  /*
+   * Timestamp derived from the kept-sample index, so it assumes nothing was ever
+   * missed. Fine for reading a trace by; not a measured acquisition time, since a
+   * dropped sample shifts everything after it instead of leaving a visible gap.
+   */
+  uint32_t t_ms = 0u;
+  if (sr_bioz > 0.0)
   {
-    printf("Error formatting log entry.\n");
-    return -1;
+    double per_kept = (double)(BIOZ_SETTLE_DISCARD + BIOZ_KEEP_PER_VISIT) /
+                      (double)BIOZ_KEEP_PER_VISIT;
+    t_ms = (uint32_t)((double)sample_index * per_kept * 1000.0 / sr_bioz);
+  }
+  sample_index++;
+  kept_count++;
+
+  /* timestamp_ms, Q (reactive), I (resistive), tone_Hz -- same column order as
+   * the full firmware's CSV, so existing plotting scripts still work. */
+  printf("%lu,%.2f,%.2f,%.0f\n", (unsigned long)t_ms, Q_ohm, I_ohm, bioz_freq_cached);
+
+  visit_kept++;
+  if (visit_kept >= BIOZ_KEEP_PER_VISIT)
+  {
+    visit_seen = 0;
+    visit_kept = 0;
+    cur_tone = (uint8_t)(cur_tone ? 0u : 1u);
+
+    setFreq((int)cur_tone);
+
+    /* FLUSH_FIFO (0x0E bit 4, self-clearing). Without it, samples already queued
+     * under the previous tone would be charged to the new tone's settling
+     * budget -- which the original's interrupt counting could not prevent. */
+    changeReg(0x0E, 1, 4, 1);
+
+    bioz_freq_cached = getBiozFreq();
+    tone_just_switched = true;
   }
 
-  // Write to SD card
-  UINT written;
-  if ((err = f_write(&file, log_entry, log_len, &written)) != FR_OK || written != log_len)
-  {
-    printf("Write failed: %s\n", FF_ERRORS[err]);
-    return err;
-  }
-
-  return err;
+  return 0;
 }

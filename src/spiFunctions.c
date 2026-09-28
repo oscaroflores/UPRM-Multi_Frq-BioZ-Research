@@ -1,48 +1,78 @@
+/*
+ * SPI transport for the MAX30009, and FIFO framing.
+ *
+ * Every function here blocks. That matters: the MSDK's blocking transaction ends
+ * with
+ *
+ *     while (!((req->spi)->intfl & MXC_F_SPI_REVA_INTFL_MST_DONE)) {}
+ *
+ * (spi_reva1.c, MXC_SPI_RevA1_MasterTransaction) and there is no timeout on it.
+ * A second SPI transaction begun while one is in flight can therefore leave the
+ * first spinning forever. Nothing in this build may touch the bus from interrupt
+ * context -- see the ISR in main.c, which only sets a flag.
+ */
+
+#include "spiFunctions.h"
+
 #include "MAX30009.h"
-#include "MAX32655.h"
 #include "bioZ.h"
 #include "board.h"
-#include "cli.h"
-#include "dma.h"
-#include "led.h"
 #include "mxc_delay.h"
 #include "mxc_device.h"
+#include "mxc_errors.h"
 #include "mxc_pins.h"
-#include "nvic_table.h"
 #include "spi.h"
-#include "tmr.h"
-#include "rtc.h"
-#include "uart.h"
-#include "user-cli.h"
 #include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-extern bool isRecording; // Global variable to track recording state
+
 /***** Definitions *****/
-#define SPI_SPEED 1000000 // Bit Rate
 
-// Board Selection
+#define SPI_SPEED 1000000 /* bit rate */
 #define SPI MXC_SPI1
-#define SPI_IRQ SPI1_IRQn
-#define FTHR_Defined 1
 
-extern uint8_t gReadBuf[100];
-extern uint8_t gHold[100];
-mxc_spi_pins_t spi_pins;
-mxc_spi_req_t req;
-int count;
-extern int errCnt;
-extern uint32_t sample_interval_us;
+/* FIFO_DATA tag values, per datasheet Table 4 "FIFO Data Format". */
+#define FIFO_TAG_IN_PHASE 0x1
+#define FIFO_TAG_QUAD_PHASE 0x2
 
-int initSPI()
+/* Whole-word sentinels, per the same table. */
+#define FIFO_WORD_INVALID 0xFFFFFFul /* returned when an empty FIFO is read */
+#define FIFO_WORD_MARKER 0xFFFFFEul  /* timing marker inserted via FIFO_MARK */
+
+/*
+ * Pushed when a BioZ channel is disabled while a sample is in flight. The
+ * datasheet says to ignore it, and to avoid it by disabling the channel right
+ * after a FIFO_DATA_RDY or A_FULL interrupt.
+ */
+#define FIFO_WORD_CHANNEL_OFF 0x004000ul
+
+/***** State *****/
+
+static mxc_spi_pins_t spi_pins;
+static mxc_spi_req_t req;
+
+/*
+ * Static transfer buffers. The original declared these as variable-length arrays
+ * sized from the device-reported FIFO count -- which, with that count misread,
+ * could be zero (undefined behaviour) or large enough to matter on the stack.
+ * A fixed buffer means the reported level can only select how much gets used.
+ */
+static uint8_t fifo_tx[MAX30009_FIFO_READ_MAX_BYTES];
+static uint8_t fifo_rx[MAX30009_FIFO_READ_MAX_BYTES];
+
+/* An I or Q word waiting for its partner. A burst can end mid-pair, so the
+ * partial pair carries into the next burst rather than being dropped. */
+static uint8_t pair_word[MAX30009_FIFO_WORD_BYTES];
+static uint8_t pair_tag;
+static bool pair_held;
+
+static uint32_t lost_samples;
+static uint32_t tag_errors;
+
+/***** Implementation *****/
+
+int initSPI(void)
 {
-  /*
-  Function to start SPI communication - called at start of main
-
-  */
-
   int retVal;
 
   spi_pins.clock = TRUE;
@@ -54,308 +84,281 @@ int initSPI()
   spi_pins.ss1 = FALSE;
   spi_pins.ss2 = FALSE;
 
-  retVal = MXC_SPI_Init(SPI, 1, 0, 1, 0, SPI_SPEED, spi_pins); // initialise SPI
-
-  if (retVal != E_NO_ERROR)
+  if ((retVal = MXC_SPI_Init(SPI, 1, 0, 1, 0, SPI_SPEED, spi_pins)) != E_NO_ERROR)
   {
-    printf("\nSPI INITIALIZATION ERROR\n");
+    printf("SPI init error: %d\n", retVal);
     return retVal;
   }
-
-  retVal = MXC_SPI_SetMode(SPI, 0); // ** SPI modes different in SDK
-
-  if (retVal != E_NO_ERROR)
+  if ((retVal = MXC_SPI_SetMode(SPI, 0)) != E_NO_ERROR)
   {
-    printf("\nMODE ERROR\n");
+    printf("SPI mode error: %d\n", retVal);
     return retVal;
   }
-
-  retVal = MXC_SPI_SetDataSize(SPI, 8); // num of bits per character, 8 as byte
-
-  if (retVal != E_NO_ERROR)
+  if ((retVal = MXC_SPI_SetDataSize(SPI, 8)) != E_NO_ERROR)
   {
-    printf("\nSPI SET DATASIZE ERROR: %d\n", retVal);
+    printf("SPI data size error: %d\n", retVal);
     return retVal;
   }
-
-  retVal = MXC_SPI_SetWidth(SPI, SPI_WIDTH_STANDARD);
-
-  if (retVal != E_NO_ERROR)
+  if ((retVal = MXC_SPI_SetWidth(SPI, SPI_WIDTH_STANDARD)) != E_NO_ERROR)
   {
-    printf("\nSPI SET WIDTH ERROR: %d\n", retVal);
+    printf("SPI width error: %d\n", retVal);
     return retVal;
   }
 
   return E_NO_ERROR;
 }
 
-uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf,
-              uint8_t rx_len)
+int shutdownSPI(void)
 {
-  /*
-  This is a function to perform simple SPI transactions
-  It is called within regRead or regWrite
+  int retVal = MXC_SPI_Shutdown(SPI);
 
-  tx_buf and rx_buf are the arrays for the transmit and receive data
-  and tx_len and rx_len are the lengths of the data
-
-
-  */
-  MXC_Delay(MXC_DELAY_USEC(75));
-
-  int err;
-
-  req.spi = SPI;
-  req.txData = (uint8_t *)tx_buf; // buffer with transmit data
-  req.rxData = rx_buf;            // buffer for received data
-  req.txLen = tx_len;             // num of bytes to be sent
-  req.rxLen = rx_len;             // num of bytes to receive (from regread/write)
-  req.ssIdx = 0;                  // slave select line to use
-  req.ssDeassert = 1;             // ? deassert ss at end of transaction
-  req.txCnt = 0;                  // num ac transmitted
-  req.rxCnt = 0;                  // num stored
-  req.completeCB = NULL;
-
-  err = MXC_SPI_MasterTransaction(&req);
-
-  if (err != E_NO_ERROR)
+  if (retVal != E_NO_ERROR)
   {
-    printf("\nSPI TRANSACTION FAIL: %d\n", err);
-    return err;
+    printf("SPI shutdown error: %d\n", retVal);
   }
-
-  int i = 0;
-  for (i = 0; i < rx_len; i++)
-  {
-    gReadBuf[i] = rx_buf[i];
-  }
-
-  return err;
+  return retVal;
 }
 
-void sleep(uint32_t ms) {}
+uint8_t doSPI(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, uint8_t rx_len)
+{
+  /*
+   * The original had MXC_Delay(MXC_DELAY_USEC(75)) here. It traces back to a
+   * 10 ms delay in ADI's GSR demo (its spiFunctions.c), invisible at ~16 sps and
+   * never a documented device requirement -- whittled down over time, removed
+   * once, then silently reinstated. Left out here: if register access proves
+   * unreliable without it, that is worth establishing explicitly rather than
+   * carrying a delay nobody can justify.
+   */
+  req.spi = SPI;
+  req.txData = tx_buf;
+  req.rxData = rx_buf;
+  req.txLen = tx_len;
+  req.rxLen = rx_len;
+  req.ssIdx = 0;
+  req.ssDeassert = 1;
+  req.txCnt = 0;
+  req.rxCnt = 0;
+  req.completeCB = NULL;
+
+  int err = MXC_SPI_MasterTransaction(&req);
+  if (err != E_NO_ERROR)
+  {
+    printf("SPI transaction fail: %d\n", err);
+    return (uint8_t)err;
+  }
+
+  return E_NO_ERROR;
+}
 
 void regWrite(uint8_t regAddr, uint8_t val)
 {
-  /*
-  Function to write to register
-  */
-  uint8_t ix = 0, tx_len = 3, tx_buf[tx_len];
-  tx_buf[ix++] = regAddr;
+  uint8_t tx_buf[3] = {regAddr, 0x00, val};
 
-  tx_buf[ix++] = 0x00;
-  tx_buf[ix++] = val;
-  int x = doSPI(tx_buf, tx_len, NULL, 0);
-
-  if (x != 0)
-    printf("ERROR %X \n", x);
+  if (doSPI(tx_buf, 3, NULL, 0) != E_NO_ERROR)
+  {
+    printf("regWrite 0x%02X failed\n", regAddr);
+  }
 }
 
 int regRead(uint8_t regAddr)
 {
-  /*
+  uint8_t tx_buf[3] = {regAddr, 0x80, 0x00};
+  uint8_t rx_buf[3] = {0};
 
-  Function to read from register
-
-
-
-  */
-
-  uint8_t ix = 0, tx_len = 3;
-  uint8_t tx_buf[tx_len], rx_buf[tx_len];
-  int i = 0;
-  tx_buf[ix++] = regAddr;
-  tx_buf[ix++] = 0x80;
-  tx_buf[ix] = 0x0;
-
-  for (i = 0; i < tx_len; i++)
+  /* Returns the value, or -1 on bus failure. The original returned the value in
+   * a uint8_t and so could not distinguish an error code from data -- a failed
+   * read looked like a plausible register value. */
+  if (doSPI(tx_buf, 3, rx_buf, 3) != E_NO_ERROR)
   {
-    rx_buf[i] = 0x0;
+    return -1;
   }
-
-  int err;
-
-  err = doSPI(tx_buf, tx_len, rx_buf, tx_len);
-  if (err == 0)
-  {
-
-    return gReadBuf[2];
-  }
-  else
-    return err;
-}
-
-int shutdownSPI()
-{
-  /*
-
-  End SPI communication at end of transactions
-
-  */
-  int retVal = 0;
-  retVal = MXC_SPI_Shutdown(SPI);
-
-  if (retVal != E_NO_ERROR)
-  {
-    printf("\n-->SPI SHUTDOWN ERROR: %d\n", retVal);
-    return retVal;
-  }
-
-  else
-  {
-    printf("SPI shutdown \n");
-    return E_NO_ERROR;
-  }
+  return rx_buf[2];
 }
 
 void changeReg(uint8_t regAddr, uint8_t val, uint8_t bit1, uint8_t numBits)
 {
   /*
-  This is a function to change specific bits of the byte
-  */
-
+   * Preserved from the original, including its bit1/numBits convention: bit1 is
+   * the field's high bit and numBits its width, so (bit1=4, numBits=4) means
+   * bits 4..1. Kept as-is so register writes stay comparable with the full
+   * firmware.
+   */
   int i = 0;
   uint8_t x1 = 0;
   for (i = 7; i > bit1; i--)
   {
-    x1 = x1 + pow(2, i);
+    x1 = (uint8_t)(x1 + pow(2, i));
   }
 
   uint8_t x2 = 0;
   for (i = 0; i < (bit1 - numBits + 1); i++)
   {
-
-    x2 = x2 + (pow(2, i));
+    x2 = (uint8_t)(x2 + pow(2, i));
   }
 
-  uint8_t newBits = x1 + x2;
-  uint8_t reg1 = regRead(regAddr);
-  newBits = reg1 & newBits;
-  val = val << (bit1 - numBits + 1);
-  newBits = newBits + val;
-  regWrite(regAddr, newBits);
+  uint8_t newBits = (uint8_t)(x1 + x2);
+  int reg1 = regRead(regAddr);
+  if (reg1 < 0)
+  {
+    printf("changeReg 0x%02X: readback failed, write skipped\n", regAddr);
+    return;
+  }
+
+  newBits = (uint8_t)(reg1 & newBits);
+  val = (uint8_t)(val << (bit1 - numBits + 1));
+  regWrite(regAddr, (uint8_t)(newBits + val));
 }
 
-int spiBurst(bool freqLogged)
+uint16_t fifoReadLevel(uint8_t *ovf_out)
 {
-  uint8_t regAddr = 0x0C;
-  int err = 0;
+  int c1 = regRead(FIFO_COUNTER_1_REGISTER);
+  int c2 = regRead(FIFO_COUNTER_2_REGISTER);
 
-  regRead(0x0A);
-  uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
-  regRead(0x0B);
-  fifoCount += gReadBuf[2];
+  if (c1 < 0 || c2 < 0)
+  {
+    if (ovf_out != NULL)
+    {
+      *ovf_out = 0;
+    }
+    return 0;
+  }
 
-  uint8_t tx_buf[fifoCount];
-  uint8_t rx_buf[fifoCount];
-  memset(tx_buf, 0, fifoCount);
-  memset(rx_buf, 0, fifoCount);
+  if (ovf_out != NULL)
+  {
+    *ovf_out = (uint8_t)(c1 & OVF_COUNTER_MASK);
+  }
 
-  tx_buf[0] = regAddr;
-  tx_buf[1] = 0x80;
+  /*
+   * Bit 7 of 0x0A is the count's bit 8. Bits 6:0 are OVF_COUNTER, a different
+   * quantity. The original masked with 0x7F, so it read the overflow counter as
+   * the count -- and then used a sample count as a byte length, making every
+   * burst about a third of the length it should have been.
+   */
+  uint16_t level = (uint16_t)(((uint16_t)(c1 & FIFO_DATA_COUNT_MSB_MASK)) << 1);
+  level |= (uint16_t)(c2 & 0xFF);
+
+  return level;
+}
+
+int fifoBurst(bool print)
+{
+  uint8_t ovf = 0;
+  uint16_t level = fifoReadLevel(&ovf);
+
+  if (ovf != 0)
+  {
+    /* FIFO_RO defaults to 1, so the device silently overwrote the oldest
+     * samples. Alignment across the hole is not guaranteed. */
+    lost_samples += ovf;
+    pair_held = false;
+  }
+
+  if (level == 0)
+  {
+    return E_NO_ERROR;
+  }
+
+  uint16_t words = level;
+  if (words > MAX30009_FIFO_READ_MAX_WORDS)
+  {
+    words = MAX30009_FIFO_READ_MAX_WORDS;
+  }
+
+  uint32_t len = MAX30009_FIFO_CMD_BYTES + ((uint32_t)words * MAX30009_FIFO_WORD_BYTES);
+
+  memset(fifo_tx, 0, len);
+  fifo_tx[0] = FIFO_DATA_REGISTER_REGISTER;
+  fifo_tx[1] = 0x80; /* read */
+  memset(fifo_rx, 0, len);
 
   req.spi = SPI;
-  req.txData = tx_buf;
-  req.rxData = rx_buf;
-  req.txLen = fifoCount;
-  req.rxLen = fifoCount;
+  req.txData = fifo_tx;
+  req.rxData = fifo_rx;
+  req.txLen = len;
+  req.rxLen = len;
   req.ssIdx = 0;
   req.ssDeassert = 1;
   req.txCnt = 0;
   req.rxCnt = 0;
   req.completeCB = NULL;
 
-  err = MXC_SPI_MasterTransaction(&req);
+  int err = MXC_SPI_MasterTransaction(&req);
   if (err != E_NO_ERROR)
   {
-    printf("\nSPI TRANSACTION FAIL: %d\n", err);
+    printf("FIFO burst fail: %d\n", err);
     return err;
   }
 
-  for (int i = 0; i < fifoCount; i++)
+  /*
+   * Fixed three-byte strides from the first data byte, keyed on each word's tag.
+   * The original scanned for non-zero bytes to find frame boundaries, which only
+   * appeared to work because the read length was wrong and the buffer held
+   * trailing padding -- sample data legitimately contains zero bytes.
+   */
+  for (uint16_t w = 0; w < words; w++)
   {
-    if (rx_buf[i] != 0)
+    const uint8_t *word = &fifo_rx[MAX30009_FIFO_CMD_BYTES + (w * MAX30009_FIFO_WORD_BYTES)];
+    uint32_t raw = ((uint32_t)word[0] << 16) | ((uint32_t)word[1] << 8) | (uint32_t)word[2];
+
+    if (raw == FIFO_WORD_INVALID)
     {
-      gHold[0] = rx_buf[i];
-      gHold[1] = rx_buf[i + 1];
-      gHold[2] = rx_buf[i + 2];
-      i += 3;
+      break; /* read past valid data; nothing after this is meaningful */
+    }
+    if (raw == FIFO_WORD_MARKER || raw == FIFO_WORD_CHANNEL_OFF)
+    {
+      continue;
+    }
 
-      while (i < fifoCount && rx_buf[i] == 0)
-        i++;
+    uint8_t tag = (uint8_t)(word[0] >> 4);
+    if (tag != FIFO_TAG_IN_PHASE && tag != FIFO_TAG_QUAD_PHASE)
+    {
+      tag_errors++;
+      continue;
+    }
 
-      if (i + 2 < fifoCount)
-      {
-        gHold[3] = rx_buf[i];
-        gHold[4] = rx_buf[i + 1];
-        gHold[5] = rx_buf[i + 2];
-        i += 2;
+    if (!pair_held)
+    {
+      memcpy(pair_word, word, MAX30009_FIFO_WORD_BYTES);
+      pair_tag = tag;
+      pair_held = true;
+      continue;
+    }
 
-        calcBioZ(gHold, freqLogged);
-      }
+    if (pair_tag == tag)
+    {
+      /* Two same-phase words running: the partner was lost. Keep the newer word
+       * so the stream re-pairs rather than staying skewed by one. */
+      tag_errors++;
+      memcpy(pair_word, word, MAX30009_FIFO_WORD_BYTES);
+      pair_tag = tag;
+      continue;
+    }
+
+    uint8_t pair[2 * MAX30009_FIFO_WORD_BYTES];
+    memcpy(&pair[0], pair_word, MAX30009_FIFO_WORD_BYTES);
+    memcpy(&pair[MAX30009_FIFO_WORD_BYTES], word, MAX30009_FIFO_WORD_BYTES);
+    pair_held = false;
+
+    calcBioZ(pair, print);
+
+    if (biozToneJustSwitched())
+    {
+      /* The tone changed and the FIFO was flushed. Everything left in this
+       * buffer was acquired under the tone just left; decoding it would charge
+       * those samples to the new tone's settling budget. */
+      break;
     }
   }
 
-  return err;
+  return E_NO_ERROR;
 }
 
-int spiBurstnoPrint()
+uint32_t fifoLostSamples(void)
 {
-  uint8_t regAddr = 0x0C;
-  int err = 0;
+  return lost_samples;
+}
 
-  regRead(0x0A);
-  uint16_t fifoCount = (gReadBuf[2] & 0x7F) << 1;
-  regRead(0x0B);
-  fifoCount += gReadBuf[2];
-
-  uint8_t tx_buf[fifoCount];
-  uint8_t rx_buf[fifoCount];
-  memset(tx_buf, 0, fifoCount);
-  memset(rx_buf, 0, fifoCount);
-
-  tx_buf[0] = regAddr;
-  tx_buf[1] = 0x80;
-
-  req.spi = SPI;
-  req.txData = tx_buf;
-  req.rxData = rx_buf;
-  req.txLen = fifoCount;
-  req.rxLen = fifoCount;
-  req.ssIdx = 0;
-  req.ssDeassert = 1;
-  req.txCnt = 0;
-  req.rxCnt = 0;
-  req.completeCB = NULL;
-
-  err = MXC_SPI_MasterTransaction(&req);
-  if (err != E_NO_ERROR)
-  {
-    printf("\nSPI TRANSACTION FAIL: %d\n", err);
-    return err;
-  }
-
-  for (int i = 0; i < fifoCount; i++)
-  {
-    if (rx_buf[i] != 0)
-    {
-      gHold[0] = rx_buf[i];
-      gHold[1] = rx_buf[i + 1];
-      gHold[2] = rx_buf[i + 2];
-      i += 3;
-
-      while (i < fifoCount && rx_buf[i] == 0)
-        i++;
-
-      if (i + 2 < fifoCount)
-      {
-        gHold[3] = rx_buf[i];
-        gHold[4] = rx_buf[i + 1];
-        gHold[5] = rx_buf[i + 2];
-        i += 2;
-      }
-    }
-  }
-
-  return err;
+uint32_t fifoTagErrors(void)
+{
+  return tag_errors;
 }
