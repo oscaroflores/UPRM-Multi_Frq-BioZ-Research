@@ -1,0 +1,7 @@
+build/
+buildrv/
+*.elf
+*.map
+*.bin
+*.hex
+__pycache__/
