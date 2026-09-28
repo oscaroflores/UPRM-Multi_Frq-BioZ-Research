@@ -185,6 +185,11 @@ int main(void)
   printf("\n# --- minimal BioZ acquisition ---\n");
   printf("# no BLE, no SD card, no CLI\n");
   printf("# SPI inter-transaction delay: %d us\n", SPI_INTER_XACT_DELAY_US);
+  printf("# FIFO transfers: %s\n", BIOZ_USE_DMA ? "DMA" : "blocking");
+#if BIOZ_USE_DMA
+  printf("# DMA MT mode: %d, timeout: %d us\n", BIOZ_DMA_MT_MODE,
+         BIOZ_DMA_TIMEOUT_US);
+#endif
 
   if ((err = initSPI()) != E_NO_ERROR)
   {
@@ -320,6 +325,21 @@ int main(void)
              (unsigned long)fifoTagErrors(), (unsigned)level, (unsigned)ovf,
              (unsigned)status, (unsigned)cfg1,
              MXC_GPIO_InGet(AFE_INT_PORT, AFE_INT_PIN) ? 1 : 0);
+
+#if BIOZ_USE_DMA
+      /* dma should track the service count, and both failure counters must
+       * stay at zero. A timeout means a completion never arrived -- most
+       * likely a channel that was never acquired, or a missing handler. */
+      printf("#   dma=%lu timeouts=%lu errors=%lu\n",
+             (unsigned long)fifoDmaTransfers(), (unsigned long)fifoDmaTimeouts(),
+             (unsigned long)fifoDmaErrors());
+
+      if (fifoDmaTimeouts() > 0 || fifoDmaErrors() > 0)
+      {
+        printf("#   DIAGNOSIS DMA transfers are failing. Rebuild with "
+               "-DBIOZ_USE_DMA=0 to confirm the blocking path still works.\n");
+      }
+#endif
 
       if (!interrupt_seen && biozDecodedCount() == 0 && level == 0)
       {
